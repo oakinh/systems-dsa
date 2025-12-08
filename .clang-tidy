@@ -1,0 +1,34 @@
+Checks: >
+  -*,
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  bugprone-*,
+  performance-*,
+  modernize-*,
+  readability-implicit-bool-conversion,
+  readability-container-size-empty,
+  -bugprone-suspicious-include,   # gtest includes .cc files intentionally
+  -llvm-*,
+  -llvmlibc-*,
+  -altera-*,
+  -hicpp-*,
+  -fuchsia-*,
+  -zircon-*,
+  -google-*,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -modernize-use-trailing-return-type,
+  -llvm-include-order
+
+WarningsAsErrors: ''
+
+HeaderFilterRegex: '^(?!.*(googletest|gtest|_deps|third_party|external|build/)).*(^|/)(src|include)/'
+
+FormatStyle: none
+AnalyzeTemporaryDtors: false
+
+CheckOptions:
+  - key: readability-implicit-bool-conversion.AllowIntegerConditions
+    value: 'true'
+  - key: modernize-use-nodiscard.ReplacementString
+    value: '[[nodiscard]]'

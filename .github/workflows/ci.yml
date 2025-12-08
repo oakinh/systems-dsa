@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [asan, tsan, release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools (clang, libc++ , ninja, cmake)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg lsb-release ninja-build software-properties-common
+          # LLVM apt for clang/clang-tidy
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 19
+          sudo apt-get install -y clang-19 clang-tidy-19 lldb-19 lld-19 libc++-19-dev libc++abi-19-dev
+          # Ensure cmake is recent enough
+          sudo apt-get install -y cmake
+
+      - name: Show versions
+        run: |
+          clang++ --version
+          clang-tidy --version
+          cmake --version
+
+      - name: Configure (${ { matrix.preset } })
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build (${ { matrix.preset } })
+        run: cmake --build --preset ${{ matrix.preset }} -j
+
+      # If you add tests later (GoogleTest), they'll run here automatically:
+      - name: (Optional) CTest
+        if: always()
+        run: ctest --preset ${{ matrix.preset }} --output-on-failure || true
