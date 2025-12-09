@@ -1,5 +1,5 @@
 # Cpp Project Template
-### cpp-project-template
+### systems-dsa
 
 ## Build & Test (Linux/macOS/WSL)
 

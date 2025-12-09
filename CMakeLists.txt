@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(cpp-project-template)
+project(systems-dsa)
 
 option(HPE_BUILD_TESTS "Build unit tests" ON)
 option(HPE_WARNINGS_AS_ERRORS "Treat warnings as errors" ON)
@@ -59,12 +59,12 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
         "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
 )
 
-add_executable(cpp-project-template ${SOURCES})
-target_include_directories(cpp-project-template PRIVATE ${PROJECT_SOURCE_DIR}/include)
+add_executable(systems-dsa ${SOURCES})
+target_include_directories(systems-dsa PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
 # Apply clang-tidy only to executable (avoids touching third-party).
 if (_tidy)
-    set_property(TARGET cpp-project-template PROPERTY CXX_CLANG_TIDY "${_tidy}")
+    set_property(TARGET systems-dsa PROPERTY CXX_CLANG_TIDY "${_tidy}")
 endif()
 
 # ---- Tests -------------------------------------------------------------------
