@@ -16,11 +16,14 @@
 - `void shrink_to_fit()`
   - shrink_to_fit can be taken as a suggestion
 ### Pushing & Popping
-- `void push_back(const T& value)` 
+- `void push_back(const T& value)`
+- `void push_back(const T&& value)`
 - `void pop_back()` 
 ### Copy / move operations
 - `Vector(const Vector& other)` // Copy constructor
 - `Vector& operator=(const Vector& other)` // Copy assignment
+- `Vector(const Vector&& other)` // Move constructor
+- `Vector& operator=(const Vector&& other)` // Move assignment
 
 ## Invariants
 - Memory must be allocated _contiguously_
