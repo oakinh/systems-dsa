@@ -67,14 +67,13 @@ namespace systems_dsa {
     // Size & Capacity
     // ---------------------
         size_t size() const {
-            assert(m_size >= 0);
+
             return m_size;
         }
         size_t capacity() const {
             return m_capacity;
         }
         bool empty() const {
-            assert(m_size >= 0);
             return m_size == 0;
         }
 

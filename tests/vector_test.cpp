@@ -1,21 +1,16 @@
 #include <gtest/gtest.h>
 #include <systems_dsa/vector.hpp>
 
-TEST(dummy, compiles) { SUCCEED(); }
-// TEST(VectorTest, BasicAssertions) {
-//     oakin::Vector<int> myVec;
-//     myVec.push_back(2);
-//     myVec.push_back(8);
-//
-//     std::cout << "size: " << myVec.size() << " | capacity: " << myVec.capacity() << '\n';
-//     for (size_t i{}; i < myVec.size(); ++i) {
-//         std::cout << myVec[i] << '\n';
-//         // std::cout << i << '\n';
-//     }
-//
-//     myVec.pop_back();
-//
-//     for (size_t i{}; i < myVec.size(); ++i) {
-//         std::cout << myVec[i] << '\n';
-//     }
-// }
+TEST(VectorTest, BasicAssertions) {
+    systems_dsa::vector<int> myVec;
+    myVec.push_back(2);
+    myVec.push_back(8);
+
+    EXPECT_EQ(myVec.size(), 2);
+    EXPECT_GE(myVec.capacity(), 2);
+    std::cout << "size: " << myVec.size() << " | capacity: " << myVec.capacity() << '\n';
+
+    myVec.pop_back();
+
+    EXPECT_EQ(myVec.size(), 1);
+}
