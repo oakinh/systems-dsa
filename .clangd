@@ -1,7 +1,4 @@
 CompileFlags:
   CompilationDatabase: ./
-  Add: [
-    -isystem, build/libcxx/_deps/googletest-src/googletest/include
-  ]
 Index:
   Background: Build

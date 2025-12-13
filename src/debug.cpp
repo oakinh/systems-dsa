@@ -1,9 +1,9 @@
+#include <systems_dsa/vector.hpp>
 #include <iostream>
-#include "array/vector.hpp"
 
 int main() {
 	std::cout << "Hello programmers!\n";
-    oakin::Vector<int> myVec;
+    systems_dsa::vector<int> myVec;
     myVec.push_back(2);
     myVec.push_back(8);
 

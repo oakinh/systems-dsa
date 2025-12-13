@@ -1,16 +1,17 @@
 #pragma once
 #include <cassert>
+#include <iostream>
 #include <exception>
 
-namespace oakin {
+namespace systems_dsa {
     template <typename T>
-    class Vector {
+    class vector {
     private:
-        int m_capacity { 2 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
-        int m_size {};
+        size_t m_capacity { 2 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
+        size_t m_size {};
         T* m_data { nullptr }; // Is this plus m_size enough to maintain transparency? Capacity should not be a visible concept to the user
 
-        void allocate(int capacity) {
+        void allocate(size_t capacity) {
             // TODO: Add std::nothrow ?
             m_data = new T[capacity];
             if (!m_data) {
@@ -29,12 +30,14 @@ namespace oakin {
                 std::cerr << "No need to expand, existing memory block still has room\n";
                 return;
             }
-            int newCapacity { m_capacity + ( m_capacity / 2)};
+            size_t newCapacity { m_capacity + ( m_capacity / 2)};
             T* newData { new T[newCapacity] };
             if (!newData) {
                 std::cerr << "Failed to allocate newData in expand\n";
                 return;
             }
+			m_capacity = newCapacity;
+
             for (size_t i { 0 }; i < m_size; ++i) {
                 // TODO: Figure out how to move objects that support move semantics
                 newData[i] = m_data[i];
@@ -48,15 +51,15 @@ namespace oakin {
     // Constructors / Destructor
     // ---------------------
         // Default constructor
-        Vector() = default;
+        vector() = default;
 
         // Constructor with size
-        explicit Vector(int n) : m_capacity { n }  {
+        explicit vector(size_t n) : m_capacity { n }  {
             allocate(n);
         }
 
         // Destructor
-        ~Vector() {
+        ~vector() {
             delete[] m_data;
             m_data = nullptr;
         }
@@ -75,7 +78,7 @@ namespace oakin {
             return m_size == 0;
         }
 
-        void reserve(size_t newCapacity) {
+/*        void reserve(size_t newCapacity) {
             // TODO: implement reserve
             std::cerr << ".reserve(): not implemented\n";
         };
@@ -84,7 +87,7 @@ namespace oakin {
             // TODO: implement shrink_to_fit
             std::cerr << ".shrink_to_fit(): not implemented\n";
         };
-
+*/
     // ---------------------
     // Element Access
     // ---------------------

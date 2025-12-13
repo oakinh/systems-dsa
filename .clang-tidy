@@ -25,7 +25,6 @@ WarningsAsErrors: ''
 HeaderFilterRegex: '^(?!.*(googletest|gtest|_deps|third_party|external|build/)).*(^|/)(src|include)/'
 
 FormatStyle: none
-AnalyzeTemporaryDtors: false
 
 CheckOptions:
   - key: readability-implicit-bool-conversion.AllowIntegerConditions
