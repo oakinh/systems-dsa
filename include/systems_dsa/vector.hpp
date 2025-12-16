@@ -11,30 +11,31 @@ namespace systems_dsa {
         int m_size {};
         T* m_data { nullptr }; // Is this plus m_size enough to maintain transparency? Capacity should not be a visible concept to the user
 
-        void allocate(int capacity) {
+        bool allocate(int capacity) {
             // TODO: Add std::nothrow ?
             m_data = new T[capacity];
             if (!m_data) {
                 std::cerr << "Failed to allocate m_data\n";
-                return;
+                return false;
             }
             m_capacity = capacity;
             // TODO: figure out if the m_capacity = capacity should be done here, or in the constructor's initializer list
 
             assert(m_capacity > m_size && "m_capacity is not greater than m_size after initial allocation\n");
+            return true;
         }
-        void expand() {
+        bool expand() noexcept {
             assert(m_size <= m_capacity && "m_size is bigger than m_capacity, there's a bug\n");
             assert(m_size == m_capacity && "m_size does not equal m_capacity when expansion was attempted\n");
             if (m_size != m_capacity) {
                 std::cerr << "No need to expand, existing memory block still has room\n";
-                return;
+                return false;
             }
             int newCapacity { m_capacity + ( m_capacity / 2)};
-            T* newData { new T[newCapacity] };
+            T* newData { new (std::nothrow) T[newCapacity] };
             if (!newData) {
                 std::cerr << "Failed to allocate newData in expand\n";
-                return;
+                return false;
             }
 			m_capacity = newCapacity;
 
@@ -44,7 +45,7 @@ namespace systems_dsa {
             }
             delete[] m_data;
             m_data = newData;
-
+            return true;
         }
     public:
     // ---------------------
@@ -140,19 +141,34 @@ namespace systems_dsa {
     // ---------------------
     // Pushing & popping
     // ---------------------
-        void push_back(const T& value) {
-            if (!m_data) allocate(2);
+        void push_back(const T& value) noexcept {
+            if (!m_data) {
+                if (!allocate(2)) {
+                    std::cerr << "push_back failed, failed to allocate initial vector.\n";
+                }
+            }
+
             if (m_size == m_capacity) {
-                expand();
+                if (!expand()) {
+                    std::cerr << "push_back failed, leaving m_data in previous valid state.\n";
+                    return;
+                }
             }
             m_data[m_size] = value;
             ++m_size;
         }
 
         void push_back(const T&& value) {
-            if (!m_data) allocate(2);
+            if (!m_data) {
+                if (!allocate(2)) {
+                    std::cerr << "push_back failed, failed to allocate initial vector.\n";
+                }
+            }
             if (m_size == m_capacity) {
-                expand();
+                if (!expand()) {
+                    std::cerr << "push_back failed, leaving m_data in previous valid state.\n";
+                    return;
+                }
             }
             // TODO: Figure out if I should handle rvalues differently than lvalues. Move?
             // I'm thinking since value is an rvalue, if it has a move assignment operator, it should use that
