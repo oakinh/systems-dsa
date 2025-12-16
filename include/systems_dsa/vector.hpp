@@ -13,7 +13,7 @@ namespace systems_dsa {
 
         bool allocate(int capacity) {
             // TODO: Add std::nothrow ?
-            m_data = new T[capacity];
+            m_data = new (std::nothrow) T[capacity];
             if (!m_data) {
                 std::cerr << "Failed to allocate m_data\n";
                 return false;
