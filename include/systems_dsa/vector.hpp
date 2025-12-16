@@ -7,11 +7,11 @@ namespace systems_dsa {
     template <typename T>
     class vector {
     private:
-        size_t m_capacity { 2 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
-        size_t m_size {};
+        int m_capacity { 2 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
+        int m_size {};
         T* m_data { nullptr }; // Is this plus m_size enough to maintain transparency? Capacity should not be a visible concept to the user
 
-        void allocate(size_t capacity) {
+        void allocate(int capacity) {
             // TODO: Add std::nothrow ?
             m_data = new T[capacity];
             if (!m_data) {
@@ -19,7 +19,7 @@ namespace systems_dsa {
                 return;
             }
             m_capacity = capacity;
-            // TODO: figure out if the m_size = size should be done here, or in the constructor's initializer list
+            // TODO: figure out if the m_capacity = capacity should be done here, or in the constructor's initializer list
 
             assert(m_capacity > m_size && "m_capacity is not greater than m_size after initial allocation\n");
         }
@@ -30,7 +30,7 @@ namespace systems_dsa {
                 std::cerr << "No need to expand, existing memory block still has room\n";
                 return;
             }
-            size_t newCapacity { m_capacity + ( m_capacity / 2)};
+            int newCapacity { m_capacity + ( m_capacity / 2)};
             T* newData { new T[newCapacity] };
             if (!newData) {
                 std::cerr << "Failed to allocate newData in expand\n";
@@ -38,7 +38,7 @@ namespace systems_dsa {
             }
 			m_capacity = newCapacity;
 
-            for (size_t i { 0 }; i < m_size; ++i) {
+            for (int i { 0 }; i < m_size; ++i) {
                 // TODO: Figure out how to move objects that support move semantics
                 newData[i] = m_data[i];
             }
@@ -54,7 +54,7 @@ namespace systems_dsa {
         vector() = default;
 
         // Constructor with size
-        explicit vector(size_t n) : m_capacity { n }  {
+        explicit vector(int n) : m_capacity { n }  {
             allocate(n);
         }
 
@@ -66,18 +66,18 @@ namespace systems_dsa {
     // ---------------------
     // Size & Capacity
     // ---------------------
-        size_t size() const {
+        int size() const {
 
             return m_size;
         }
-        size_t capacity() const {
+        int capacity() const {
             return m_capacity;
         }
         bool empty() const {
             return m_size == 0;
         }
 
-/*        void reserve(size_t newCapacity) {
+/*        void reserve(int newCapacity) {
             // TODO: implement reserve
             std::cerr << ".reserve(): not implemented\n";
         };
@@ -90,15 +90,15 @@ namespace systems_dsa {
     // ---------------------
     // Element Access
     // ---------------------
-        const T& operator[](size_t index) const {
+        const T& operator[](int index) const {
             return m_data[index];
         }
 
-        T& operator[](size_t index) {
+        T& operator[](int index) {
             return m_data[index];
         }
 
-        T& at(size_t index) {
+        T& at(int index) {
             if (index < m_size) {
                 return m_data[index];
             }

@@ -1,18 +1,20 @@
 # Dynamic Array (Vector Clone)
+We're choosing to use a signed type for the array size and subscript operators. 
+The choice of using an unsigned integer type in the STL is generally seen as a mistake.
 ## Operations
 ### Construction / destruction
   - `Vector()` // Default constructor
-  - `Vector(size_t n)` // Constructor with size
+  - `Vector(int n)` // Constructor with size
   - `~Vector()` // Destructor 
 ### Element Access
-- `const T& operator[](size_t index) const`
-- `T& operator[](size_t index)`
-- `T& at(size_t index)` runtime bounds checking
+- `const T& operator[](int index) const`
+- `T& operator[](int index)`
+- `T& at(int index)` runtime bounds checking
 ### Size & Capacity
-- `size_t size() const` 
-- `size_t capacity() const`
+- `int size() const` 
+- `int capacity() const`
 - `bool empty() const`
-- `void reserve(size_t new_capacity)`
+- `void reserve(int new_capacity)`
 - `void shrink_to_fit()`
   - shrink_to_fit can be taken as a suggestion
 ### Pushing & Popping
@@ -41,7 +43,7 @@
 ### Size & Capacity
 - `size`, `capacity`, `empty`
   - O(1)
-- `void reserve(size_t new_capacity)`
+- `void reserve(int new_capacity)`
   - O(n) for copy/move during reallocation
   - O(1) if new_capacity <= m_capacity
 - `void shrink_to_fit()`
