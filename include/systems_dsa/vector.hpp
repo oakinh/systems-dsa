@@ -64,8 +64,10 @@ namespace systems_dsa {
             m_data = nullptr;
         }
         // Copy constructor ?
+        vector(const vector& other) = delete;
 
         // Copy assignment ?
+        vector& operator=(const vector& other) = delete;
 
         // Move constructor
         vector(const vector&& vec) noexcept
