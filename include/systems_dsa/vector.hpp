@@ -63,6 +63,32 @@ namespace systems_dsa {
             delete[] m_data;
             m_data = nullptr;
         }
+        // Copy constructor ?
+
+        // Copy assignment ?
+
+        // Move constructor
+        vector(const vector&& vec) noexcept
+            : m_data { vec.m_data } {
+            m_capacity = vec.capacity();
+            m_size = vec.size();
+            vec.m_data = nullptr;
+        }
+
+        // Move assignment
+        vector& operator=(const vector&& vec) noexcept {
+            if (&vec == this) {
+                return *this;
+            }
+
+            delete[] m_data;
+            m_data = vec.m_data;
+            vec.m_data = nullptr;
+            m_capacity = vec.capacity();
+            m_size = vec.size();
+
+            return *this;
+        }
     // ---------------------
     // Size & Capacity
     // ---------------------
@@ -104,6 +130,10 @@ namespace systems_dsa {
             }
             throw std::out_of_range("Vector index out of bounds\n");
         }
+
+        T& operator*() { return *m_data; }
+        T* operator->() { return m_data; }
+        explicit operator bool() const { return !empty(); }
 
     // ---------------------
     // Pushing & popping
