@@ -1,7 +1,9 @@
 #pragma once
 #include <cassert>
 #include <iostream>
-#include <exception>
+#include <type_traits>
+#include <memory>
+#include <optional>
 
 namespace systems_dsa {
     template <typename T>
@@ -10,8 +12,10 @@ namespace systems_dsa {
         int m_capacity { 2 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
         int m_size {};
         T* m_data { nullptr }; // Is this plus m_size enough to maintain transparency? Capacity should not be a visible concept to the user
+        bool isDestructible = false;
 
         bool allocate(int capacity) {
+            if (std::is_destructible<T>()) isDestructible = true;
             // TODO: Add std::nothrow ?
             m_data = new (std::nothrow) T[capacity];
             if (!m_data) {
@@ -24,14 +28,16 @@ namespace systems_dsa {
             assert(m_capacity > m_size && "m_capacity is not greater than m_size after initial allocation\n");
             return true;
         }
-        bool expand() noexcept {
+        bool expand(std::optional<int> desiredCapacity) noexcept {
             assert(m_size <= m_capacity && "m_size is bigger than m_capacity, there's a bug\n");
             assert(m_size == m_capacity && "m_size does not equal m_capacity when expansion was attempted\n");
             if (m_size != m_capacity) {
                 std::cerr << "No need to expand, existing memory block still has room\n";
                 return false;
             }
-            int newCapacity { m_capacity + ( m_capacity / 2)};
+            //int newCapacity { m_capacity + ( m_capacity / 2)};
+            int newCapacity { desiredCapacity.value_or(m_capacity + ( m_capacity / 2)) };
+            assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
             T* newData { new (std::nothrow) T[newCapacity] };
             if (!newData) {
                 std::cerr << "Failed to allocate newData in expand\n";
@@ -106,16 +112,23 @@ namespace systems_dsa {
             return m_size == 0;
         }
 
-/*        void reserve(int newCapacity) {
-            // TODO: implement reserve
-            std::cerr << ".reserve(): not implemented\n";
+      void reserve(int newCapacity) {
+            expand(newCapacity);
         };
 
         void shrink_to_fit() {
-            // TODO: implement shrink_to_fit
-            std::cerr << ".shrink_to_fit(): not implemented\n";
+            if (m_size == m_capacity) {
+                std::cerr << "Capacity already matches size.\n";
+                return;
+            }
+
+            // shrink_to_fit is a suggestion, we're trying to avoid waste here
+            if (m_capacity > m_size * 2) {
+                delete[] m_data;
+                allocate(m_size);
+            }
         };
-*/
+
     // ---------------------
     // Element Access
     // ---------------------
@@ -136,6 +149,7 @@ namespace systems_dsa {
 
         T& operator*() { return *m_data; }
         T* operator->() { return m_data; }
+        // TODO: we may not want this cast to bool, or we may want different behavior
         explicit operator bool() const { return !empty(); }
 
     // ---------------------
@@ -178,15 +192,13 @@ namespace systems_dsa {
         }
 
         void pop_back() {
-            // TODO: If it's a class type, call it's destructor?
-            // m_data[m_data + m_size - 1]::~T(); // Last element... TODO: but what if m_size is 0?
-            // T* elementToDestroy { m_data[m_data + m_size -1] };
-            // delete elementToDestroy;
+            // TODO: Test proper destruction
             if (m_size == 0) {
                 std::cerr << "There's nothing in Vector to pop\n";
+                return;
             }
+            std::destroy_at(m_data + m_size - 1);
             --m_size;
-
         }
     };
 }
