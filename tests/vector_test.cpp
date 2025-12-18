@@ -41,3 +41,51 @@ TEST(VectorTest, FailWhenDesiredCapacityIsLessThanCurrentCapacity) {
     myVec.reserve(5);
     EXPECT_EQ(myVec.capacity(), 10);
 }
+
+TEST(VectorTest, PopBackOnEmptyNoOps) {
+    systems_dsa::vector<std::string> myVec {};
+    int oldCapacity { myVec.capacity() };
+    int oldSize { myVec.size() };
+    myVec.pop_back();
+    EXPECT_EQ(oldCapacity, myVec.capacity());
+    EXPECT_EQ(oldSize, myVec.size());
+}
+
+TEST(VectorTest, ElementsIntactPostReserve) {
+    systems_dsa::vector<std::string> myVec {};
+    std::vector<std::string> strVec {
+        "Hello",
+        "World",
+        "my name is bob the builder",
+    };
+
+    for (const auto& str : strVec) {
+        myVec.push_back(str);
+    }
+    myVec.reserve(10);
+
+    for (int i {}; i < myVec.size(); ++i) {
+        EXPECT_EQ(myVec[i],strVec[i]);
+    }
+}
+
+TEST(VectorTest, ContainerExpandsAfterPushes) {
+    systems_dsa::vector<std::string> myVec {};
+    std::vector<std::string> strVec {
+        "Hello",
+        "World",
+        "my name is bob the builder",
+        "Boom",
+        "Big explosion",
+        "99999",
+        "0000000",
+        "111111111",
+        "22222222222",
+    };
+
+    for (size_t i {}; i < strVec.size(); ++i) {
+        myVec.push_back(strVec[i]);
+    }
+
+    EXPECT_GE(myVec.capacity(), strVec.size());
+}
