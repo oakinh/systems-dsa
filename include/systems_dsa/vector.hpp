@@ -14,7 +14,7 @@ namespace systems_dsa {
         T* m_data { nullptr }; // Is this plus m_size enough to maintain transparency? Capacity should not be a visible concept to the user
         bool isDestructible = false;
 
-        bool allocate(int capacity) {
+        constexpr bool allocate(int capacity) {
             if (std::is_destructible<T>()) isDestructible = true;
             // TODO: Add std::nothrow ?
             m_data = new (std::nothrow) T[capacity];
@@ -28,7 +28,7 @@ namespace systems_dsa {
             assert(m_capacity > m_size && "m_capacity is not greater than m_size after initial allocation\n");
             return true;
         }
-        bool expand(std::optional<int> desiredCapacity) noexcept {
+        bool expand(std::optional<int> desiredCapacity = std::nullopt) noexcept {
             assert(m_size <= m_capacity && "m_size is bigger than m_capacity, there's a bug\n");
             assert(m_size == m_capacity && "m_size does not equal m_capacity when expansion was attempted\n");
             if (m_size != m_capacity) {
@@ -36,11 +36,11 @@ namespace systems_dsa {
                 return false;
             }
             //int newCapacity { m_capacity + ( m_capacity / 2)};
-            forceRealloc(desiredCapacity);
+            return forceRealloc(desiredCapacity);
         }
 
         // forceRealloc takes no regard for current capacity vs desiredCapacity
-        bool forceRealloc(std::optional<int> desiredCapacity) noexcept {
+        constexpr bool forceRealloc(std::optional<int> desiredCapacity = std::nullopt) noexcept {
             int newCapacity { desiredCapacity.value_or(m_capacity + ( m_capacity / 2)) };
             assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
             T* newData { new (std::nothrow) T[newCapacity] };
@@ -117,7 +117,7 @@ namespace systems_dsa {
             return m_size == 0;
         }
 
-      void reserve(int newCapacity) {
+      constexpr void reserve(int newCapacity) {
             if (newCapacity <= m_capacity) {
                 std::cerr << "Cannot reserve less than or equal to current capacity.\n";
                 return;
