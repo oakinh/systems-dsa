@@ -36,6 +36,11 @@ namespace systems_dsa {
                 return false;
             }
             //int newCapacity { m_capacity + ( m_capacity / 2)};
+            forceRealloc(desiredCapacity);
+        }
+
+        // forceRealloc takes no regard for current capacity vs desiredCapacity
+        bool forceRealloc(std::optional<int> desiredCapacity) noexcept {
             int newCapacity { desiredCapacity.value_or(m_capacity + ( m_capacity / 2)) };
             assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
             T* newData { new (std::nothrow) T[newCapacity] };
@@ -43,7 +48,7 @@ namespace systems_dsa {
                 std::cerr << "Failed to allocate newData in expand\n";
                 return false;
             }
-			m_capacity = newCapacity;
+            m_capacity = newCapacity;
 
             for (int i { 0 }; i < m_size; ++i) {
                 // TODO: Figure out how to move objects that support move semantics
@@ -113,7 +118,11 @@ namespace systems_dsa {
         }
 
       void reserve(int newCapacity) {
-            expand(newCapacity);
+            if (newCapacity <= m_capacity) {
+                std::cerr << "Cannot reserve less than or equal to current capacity.\n";
+                return;
+            }
+            forceRealloc(newCapacity);
         };
 
         void shrink_to_fit() {
