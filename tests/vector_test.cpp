@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <systems_dsa/vector.hpp>
+#include "utils/lifetime_tracker.hpp"
 
 TEST(VectorTest, PushBackIncreasesSizeCapacity) {
     systems_dsa::vector<int> myVec;

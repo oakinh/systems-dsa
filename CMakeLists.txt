@@ -104,6 +104,11 @@ if(SYSTEMS_DSA_BUILD_TESTS AND BUILD_TESTING)
                 systems_dsa::systems_dsa
                 GTest::gtest_main
         )
+        target_include_directories(systems_dsa_tests
+                PRIVATE
+                ${PROJECT_SOURCE_DIR}/tests
+        )
+
         systems_dsa_apply_tidy(systems_dsa_tests)
 
         gtest_discover_tests(systems_dsa_tests DISCOVERY_TIMEOUT 30)
@@ -133,6 +138,7 @@ if(CLANG_FORMAT_EXE)
             "${PROJECT_SOURCE_DIR}/include/**/*.h"
             "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
             "${PROJECT_SOURCE_DIR}/tests/**/*.cpp"
+            "${PROJECT_SOURCE_DIR}/tests/**/*.hpp"
             "${PROJECT_SOURCE_DIR}/benchmarks/**/*.cpp"
     )
 
