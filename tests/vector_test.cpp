@@ -90,3 +90,8 @@ TEST(VectorTest, ContainerExpandsAfterPushes) {
 
     EXPECT_GE(myVec.capacity(), strVec.size());
 }
+
+TEST(VectorTest, lifetime) {
+    systems_dsa::vector<LifetimeTracker> myVec {};
+
+}
