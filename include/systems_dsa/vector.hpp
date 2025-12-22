@@ -177,7 +177,8 @@ namespace systems_dsa {
             if (m_size == m_capacity) {
                 expand();
             }
-            m_data[m_size] = value;
+
+            m_data + m_size = new T(value);
             ++m_size;
         }
 
@@ -188,7 +189,7 @@ namespace systems_dsa {
             if (m_size == m_capacity) {
                 expand();
             }
-            m_data[m_size] = std::move_if_noexcept(value);
+            m_data + m_size = new T(std::move_if_noexcept(value));
             ++m_size;
         }
 
@@ -199,7 +200,7 @@ namespace systems_dsa {
                 return;
             }
             if constexpr (!std::is_trivially_destructible<T>()) {
-                m_data[m_size].~T();
+                (m_data + m_size)->~T();
             }
             --m_size;
         }
