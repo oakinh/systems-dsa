@@ -39,7 +39,7 @@ jobs:
           ninja --version
           ccache --version
 
-      # Ensure CI uses clang-19 unless your preset overrides it explicitly.
+      # Ensure CI uses clang-19 unless preset overrides it explicitly.
       - name: Configure (${{ matrix.preset }})
         env:
           CC: clang-19

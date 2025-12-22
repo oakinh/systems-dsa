@@ -1,4 +1,5 @@
 # systems-dsa
+This is an implementation of some of the foundational data structures and algorithms of the C++ STL.
 
 ## Build & Test (Linux/macOS/WSL)
 
