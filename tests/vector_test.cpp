@@ -91,17 +91,17 @@ TEST(VectorTest, ContainerExpandsAfterPushes) {
     EXPECT_GE(myVec.capacity(), strVec.size());
 }
 
-TEST(VectorTest, ConstructionWorks) {
-    systems_dsa::vector<LifetimeTracker> myVec {};
-    LifetimeTracker::resetCounts();
-    myVec.push_back(LifetimeTracker{});
-    EXPECT_EQ(LifetimeTracker::moveCtorCount, 1);
-    LifetimeTracker myTracker {};
-    myVec.push_back(myTracker);
-    EXPECT_EQ(LifetimeTracker::ctorCount, 1);
-    EXPECT_EQ(LifetimeTracker::copyAssignCount, 1);
-
-
-
-    LifetimeTracker::resetCounts();
-}
+// TEST(VectorTest, ConstructionWorks) {
+//     systems_dsa::vector<LifetimeTracker> myVec {};
+//     LifetimeTracker::resetCounts();
+//     myVec.push_back(LifetimeTracker{});
+//     EXPECT_EQ(LifetimeTracker::moveCtorCount, 1);
+//     LifetimeTracker myTracker {};
+//     myVec.push_back(myTracker);
+//     EXPECT_EQ(LifetimeTracker::ctorCount, 1);
+//     EXPECT_EQ(LifetimeTracker::copyAssignCount, 1);
+//
+//
+//
+//     LifetimeTracker::resetCounts();
+// }

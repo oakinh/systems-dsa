@@ -33,7 +33,7 @@ namespace systems_dsa {
                 }
 
                 destroyData(m_data, m_size);
-                m_data = rawMem;
+                m_data = newData;
             }
 
             m_capacity = capacity;
@@ -178,18 +178,18 @@ namespace systems_dsa {
                 expand();
             }
 
-            m_data + m_size = new T(value);
+            new (m_data + m_size) T(value);
             ++m_size;
         }
 
-        void push_back(const T&& value) {
+        void push_back(T&& value) {
             if (!m_data) {
                 allocate(2);
             }
             if (m_size == m_capacity) {
                 expand();
             }
-            m_data + m_size = new T(std::move_if_noexcept(value));
+            new (m_data + m_size) T(std::move(value));
             ++m_size;
         }
 
