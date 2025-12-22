@@ -68,12 +68,17 @@ The choice of using an unsigned integer type in the STL is generally seen as a m
 - **Case:** When reserve is called with a smaller value than current capacity
   - **Action:** No op, return immediately
 - **Case:** operator[] with invalid index:
-  - **Action:** Throw?
+  - **Action**: Undefined behavior
 - **Case:** push_back when capacity == 0
   - **Action:** Increase capacity for the needed element
 - **Case:** push_back when reallocation fails
-  - **Action:** Throw?
+  - **Action:**: Container left in a valid state
 - **Case:** pop_back on empty vector
-  - **Action:** No op, return immediately 
+  - **Action:**: Undefined behavior
+
+## Learnings
+Allocation and object construction need to be done separately. First allocate the raw, uninitialized memory.
+Then we construct the objects in that memory using placement-new. 
+Key impact is we later have to manually call the objects' destructors.
 
 

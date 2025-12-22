@@ -4,17 +4,17 @@ class LifetimeTracker {
     bool m_alive = false;
 
 public:
-    static int liveCount;
-    static int ctorCount;
-    static int dtorCount;
-    static int copyCtorCount;
-    static int moveCtorCount;
-    static int copyAssignCount;
-    static int moveAssignCount;
-
+    inline static int liveCount;
+    inline static int ctorCount;
+    inline static int dtorCount;
+    inline static int copyCtorCount;
+    inline static int moveCtorCount;
+    inline static int copyAssignCount;
+    inline static int moveAssignCount;
 
 
     static void resetCounts() {
+        liveCount = 0;
         ctorCount = 0;
         dtorCount = 0;
         copyCtorCount = 0;
@@ -30,6 +30,7 @@ public:
     }
 
     ~LifetimeTracker() {
+        assert(m_alive && "Object called for destruction was not alive.\n");
         ++dtorCount;
         --liveCount;
         m_alive = false;
@@ -42,13 +43,11 @@ public:
         ++liveCount;
     }
 
-    LifetimeTracker(LifetimeTracker&& other) noexcept {
+    LifetimeTracker(LifetimeTracker&& other) noexcept
+        : m_alive { other.m_alive } {
         assert(other.m_alive && "Moved from class was not alive\n");
         ++moveCtorCount;
-        m_alive = other.m_alive;
-
-        other.m_alive = false;
-
+        ++liveCount;
     }
 
     LifetimeTracker& operator=(const LifetimeTracker& other) {
@@ -56,8 +55,9 @@ public:
             return *this;
         }
         assert(other.m_alive && "Copy assigned from is not alive.\n");
-
+        ++copyAssignCount;
         m_alive = other.m_alive;
+        return *this;
     }
 
     LifetimeTracker& operator=(LifetimeTracker&& other) noexcept {
@@ -65,5 +65,8 @@ public:
             return *this;
         }
         assert(other.m_alive && "Move assigned from is not alive.\n");
+        ++moveAssignCount;
+        m_alive = other.m_alive;
+        return *this;
     }
 };

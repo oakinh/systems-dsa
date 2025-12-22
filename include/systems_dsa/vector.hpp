@@ -11,52 +11,56 @@ namespace systems_dsa {
     private:
         int m_capacity { 2 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
         int m_size {};
-        T* m_data { nullptr }; // Is this plus m_size enough to maintain transparency? Capacity should not be a visible concept to the user
-        bool isDestructible = false;
+        T* m_data { nullptr };
 
-        constexpr bool allocate(int capacity) {
-            if (std::is_destructible<T>()) isDestructible = true;
-            // TODO: Add std::nothrow ?
-            m_data = new (std::nothrow) T[capacity];
+        constexpr void allocate(int capacity) {
+            void* rawMem = ::operator new(sizeof(T) * capacity);
+
             if (!m_data) {
-                std::cerr << "Failed to allocate m_data\n";
-                return false;
-            }
-            m_capacity = capacity;
-            // TODO: figure out if the m_capacity = capacity should be done here, or in the constructor's initializer list
+                // Initial allocation
+                m_data = static_cast<T*>(rawMem); // TODO: This should take args for initialization
+            } else {
+                // Reallocation
+                T* newData = static_cast<T*>(rawMem);
+                int constructed {};
+                try {
+                    for (; constructed < m_size; ++constructed) {
+                        new (newData + constructed) T(std::move_if_noexcept(m_data[constructed]));
+                    }
+                } catch (...) {
+                    destroyData(newData, constructed);
+                    throw;
+                }
 
-            assert(m_capacity > m_size && "m_capacity is not greater than m_size after initial allocation\n");
-            return true;
+                destroyData(m_data, m_size);
+                m_data = rawMem;
+            }
+
+            m_capacity = capacity;
+
+            assert(m_capacity >= m_size && "m_capacity is greater than or equal to m_size after allocation");
         }
-        bool expand(std::optional<int> desiredCapacity = std::nullopt) noexcept {
+
+        void expand(std::optional<int> desiredCapacity = std::nullopt) {
             assert(m_size <= m_capacity && "m_size is bigger than m_capacity, there's a bug\n");
             assert(m_size == m_capacity && "m_size does not equal m_capacity when expansion was attempted\n");
             if (m_size != m_capacity) {
                 std::cerr << "No need to expand, existing memory block still has room\n";
-                return false;
+                return;
             }
             //int newCapacity { m_capacity + ( m_capacity / 2)};
-            return forceRealloc(desiredCapacity);
-        }
-
-        // forceRealloc takes no regard for current capacity vs desiredCapacity
-        constexpr bool forceRealloc(std::optional<int> desiredCapacity = std::nullopt) noexcept {
             int newCapacity { desiredCapacity.value_or(m_capacity + ( m_capacity / 2)) };
             assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
-            T* newData { new (std::nothrow) T[newCapacity] };
-            if (!newData) {
-                std::cerr << "Failed to allocate newData in expand\n";
-                return false;
-            }
-            m_capacity = newCapacity;
+            allocate(newCapacity);
+        }
 
-            for (int i { 0 }; i < m_size; ++i) {
-                // TODO: Figure out how to move objects that support move semantics
-                newData[i] = m_data[i];
+        void destroyData(T* data, int size) noexcept {
+            if constexpr (!std::is_trivially_destructible<T>()) {
+                for (int i { size }; i > 0; --i) {
+                    (data + (i - 1))->~T();
+                }
             }
-            delete[] m_data;
-            m_data = newData;
-            return true;
+            ::operator delete (static_cast<void*>(data));
         }
     public:
     // ---------------------
@@ -69,11 +73,11 @@ namespace systems_dsa {
         explicit vector(int n) : m_capacity { n }  {
             allocate(n);
         }
+        // TODO: Add constructor that takes a std::initializer_list
 
         // Destructor
         ~vector() {
-            delete[] m_data;
-            m_data = nullptr;
+            destroyData(m_data, m_size);
         }
         // Copy constructor ?
         vector(const vector& other) = delete;
@@ -95,7 +99,7 @@ namespace systems_dsa {
                 return *this;
             }
 
-            delete[] m_data;
+            delete m_data;
             m_data = vec.m_data;
             vec.m_data = nullptr;
             m_capacity = vec.capacity();
@@ -122,7 +126,7 @@ namespace systems_dsa {
                 std::cerr << "Cannot reserve less than or equal to current capacity.\n";
                 return;
             }
-            forceRealloc(newCapacity);
+            allocate(newCapacity);
         };
 
         void shrink_to_fit() {
@@ -133,7 +137,7 @@ namespace systems_dsa {
 
             // shrink_to_fit is a suggestion, we're trying to avoid waste here
             if (m_capacity > m_size * 2) {
-                delete[] m_data;
+                delete m_data;
                 allocate(m_size);
             }
         };
@@ -154,6 +158,7 @@ namespace systems_dsa {
                 return m_data[index];
             }
             throw std::out_of_range("Vector index out of bounds\n");
+            return m_data[index];
         }
 
         T& operator*() { return *m_data; }
@@ -166,16 +171,11 @@ namespace systems_dsa {
     // ---------------------
         void push_back(const T& value) noexcept {
             if (!m_data) {
-                if (!allocate(2)) {
-                    std::cerr << "push_back failed, failed to allocate initial vector.\n";
-                }
+                allocate(2);
             }
 
             if (m_size == m_capacity) {
-                if (!expand()) {
-                    std::cerr << "push_back failed, leaving m_data in previous valid state.\n";
-                    return;
-                }
+                expand();
             }
             m_data[m_size] = value;
             ++m_size;
@@ -183,20 +183,12 @@ namespace systems_dsa {
 
         void push_back(const T&& value) {
             if (!m_data) {
-                if (!allocate(2)) {
-                    std::cerr << "push_back failed, failed to allocate initial vector.\n";
-                }
+                allocate(2);
             }
             if (m_size == m_capacity) {
-                if (!expand()) {
-                    std::cerr << "push_back failed, leaving m_data in previous valid state.\n";
-                    return;
-                }
+                expand();
             }
-            // TODO: Figure out if I should handle rvalues differently than lvalues. Move?
-            // I'm thinking since value is an rvalue, if it has a move assignment operator, it should use that
-            // So maybe I don't have to worry about it?
-            m_data[m_size] = value;
+            m_data[m_size] = std::move_if_noexcept(value);
             ++m_size;
         }
 
@@ -206,7 +198,9 @@ namespace systems_dsa {
                 std::cerr << "There's nothing in Vector to pop\n";
                 return;
             }
-            std::destroy_at(m_data + m_size - 1);
+            if constexpr (!std::is_trivially_destructible<T>()) {
+                m_data[m_size].~T();
+            }
             --m_size;
         }
     };
