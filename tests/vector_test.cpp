@@ -45,8 +45,8 @@ TEST(VectorTest, FailWhenDesiredCapacityIsLessThanCurrentCapacity) {
 
 TEST(VectorTest, PopBackOnEmptyNoOps) {
     systems_dsa::vector<std::string> myVec {};
-    int oldCapacity { myVec.capacity() };
-    int oldSize { myVec.size() };
+    size_t oldCapacity { myVec.capacity() };
+    size_t oldSize { myVec.size() };
     myVec.pop_back();
     EXPECT_EQ(oldCapacity, myVec.capacity());
     EXPECT_EQ(oldSize, myVec.size());
@@ -65,7 +65,7 @@ TEST(VectorTest, ElementsIntactPostReserve) {
     }
     myVec.reserve(10);
 
-    for (int i {}; i < myVec.size(); ++i) {
+    for (size_t i {}; i < myVec.size(); ++i) {
         EXPECT_EQ(myVec[i],strVec[i]);
     }
 }
@@ -91,17 +91,46 @@ TEST(VectorTest, ContainerExpandsAfterPushes) {
     EXPECT_GE(myVec.capacity(), strVec.size());
 }
 
-// TEST(VectorTest, ConstructionWorks) {
-//     systems_dsa::vector<LifetimeTracker> myVec {};
-//     LifetimeTracker::resetCounts();
-//     myVec.push_back(LifetimeTracker{});
-//     EXPECT_EQ(LifetimeTracker::moveCtorCount, 1);
-//     LifetimeTracker myTracker {};
-//     myVec.push_back(myTracker);
-//     EXPECT_EQ(LifetimeTracker::ctorCount, 1);
-//     EXPECT_EQ(LifetimeTracker::copyAssignCount, 1);
-//
-//
-//
-//     LifetimeTracker::resetCounts();
-// }
+TEST(VectorTest, ConstructionWorks) {
+    systems_dsa::vector<LifetimeTracker> myVec {};
+    LifetimeTracker::resetCounts();
+    myVec.push_back(LifetimeTracker{});
+
+    EXPECT_EQ(LifetimeTracker::moveCtorCount, 1);
+    LifetimeTracker myTracker {};
+    myVec.push_back(myTracker);
+    EXPECT_EQ(LifetimeTracker::ctorCount, 2);
+    EXPECT_EQ(LifetimeTracker::copyCtorCount, 1);
+
+    LifetimeTracker::resetCounts();
+}
+
+TEST(VectorTest, MoveAndDestructionWorks) {
+    systems_dsa::vector<LifetimeTracker> myVec {5 };
+    LifetimeTracker::resetCounts();
+    for (int i {}; i < 3; ++i) {
+        myVec.push_back(LifetimeTracker{});
+    }
+    EXPECT_EQ(LifetimeTracker::dtorCount, 3);
+    EXPECT_EQ(LifetimeTracker::moveCtorCount, 3);
+
+    myVec.reserve(10);
+
+    EXPECT_EQ(LifetimeTracker::dtorCount, 6);
+    EXPECT_EQ(LifetimeTracker::moveCtorCount, 6);
+
+    LifetimeTracker::resetCounts();
+}
+
+TEST(VectorTest, EmplaceBackConstructsInContainer) {
+    systems_dsa::vector<LifetimeTracker> myVec {10 };
+    LifetimeTracker::resetCounts();
+    for (size_t i {}; i < 2; ++i) {
+        myVec.emplace_back();
+    }
+
+    EXPECT_EQ(LifetimeTracker::moveCtorCount, 0);
+    EXPECT_EQ(LifetimeTracker::ctorCount, 2);
+
+    LifetimeTracker::resetCounts();
+}

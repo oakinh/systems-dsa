@@ -9,20 +9,20 @@ namespace systems_dsa {
     template <typename T>
     class vector {
     private:
-        int m_capacity { 2 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
-        int m_size {};
+        size_t m_capacity { 2 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
+        size_t m_size {};
         T* m_data { nullptr };
 
-        constexpr void allocate(int capacity) {
+        constexpr void allocate(size_t capacity) {
             void* rawMem = ::operator new(sizeof(T) * capacity);
 
             if (!m_data) {
                 // Initial allocation
-                m_data = static_cast<T*>(rawMem); // TODO: This should take args for initialization
+                m_data = static_cast<T*>(rawMem);
             } else {
                 // Reallocation
                 T* newData = static_cast<T*>(rawMem);
-                int constructed {};
+                size_t constructed {};
                 try {
                     for (; constructed < m_size; ++constructed) {
                         new (newData + constructed) T(std::move_if_noexcept(m_data[constructed]));
@@ -41,22 +41,22 @@ namespace systems_dsa {
             assert(m_capacity >= m_size && "m_capacity is greater than or equal to m_size after allocation");
         }
 
-        void expand(std::optional<int> desiredCapacity = std::nullopt) {
+        void expand(std::optional<size_t> desiredCapacity = std::nullopt) {
             assert(m_size <= m_capacity && "m_size is bigger than m_capacity, there's a bug\n");
             assert(m_size == m_capacity && "m_size does not equal m_capacity when expansion was attempted\n");
             if (m_size != m_capacity) {
                 std::cerr << "No need to expand, existing memory block still has room\n";
                 return;
             }
-            //int newCapacity { m_capacity + ( m_capacity / 2)};
-            int newCapacity { desiredCapacity.value_or(m_capacity + ( m_capacity / 2)) };
+            //size_t newCapacity { m_capacity + ( m_capacity / 2)};
+            size_t newCapacity { desiredCapacity.value_or(m_capacity + ( m_capacity / 2)) };
             assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
             allocate(newCapacity);
         }
 
-        void destroyData(T* data, int size) noexcept {
+        void destroyData(T* data, size_t size) noexcept {
             if constexpr (!std::is_trivially_destructible<T>()) {
-                for (int i { size }; i > 0; --i) {
+                for (size_t i { size }; i > 0; --i) {
                     (data + (i - 1))->~T();
                 }
             }
@@ -70,7 +70,7 @@ namespace systems_dsa {
         vector() = default;
 
         // Constructor with size
-        explicit vector(int n) : m_capacity { n }  {
+        explicit vector(size_t n) : m_capacity { n }  {
             allocate(n);
         }
         // TODO: Add constructor that takes a std::initializer_list
@@ -110,18 +110,18 @@ namespace systems_dsa {
     // ---------------------
     // Size & Capacity
     // ---------------------
-        int size() const {
+        size_t size() const {
 
             return m_size;
         }
-        int capacity() const {
+        size_t capacity() const {
             return m_capacity;
         }
         bool empty() const {
             return m_size == 0;
         }
 
-      constexpr void reserve(int newCapacity) {
+      constexpr void reserve(size_t newCapacity) {
             if (newCapacity <= m_capacity) {
                 std::cerr << "Cannot reserve less than or equal to current capacity.\n";
                 return;
@@ -145,15 +145,15 @@ namespace systems_dsa {
     // ---------------------
     // Element Access
     // ---------------------
-        const T& operator[](int index) const {
+        const T& operator[](size_t index) const {
             return m_data[index];
         }
 
-        T& operator[](int index) {
+        T& operator[](size_t index) {
             return m_data[index];
         }
 
-        T& at(int index) {
+        T& at(size_t index) {
             if (index < m_size) {
                 return m_data[index];
             }
@@ -190,6 +190,18 @@ namespace systems_dsa {
                 expand();
             }
             new (m_data + m_size) T(std::move(value));
+            ++m_size;
+        }
+
+        template <typename... Args>
+        void emplace_back(Args&&... args) {
+            if (!m_data) {
+                allocate(2);
+            }
+            if (m_size == m_capacity) {
+                expand();
+            }
+            new (m_data + m_size) T(std::forward<Args>(args)...);
             ++m_size;
         }
 

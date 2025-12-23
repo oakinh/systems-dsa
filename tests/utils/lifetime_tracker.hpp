@@ -12,7 +12,6 @@ public:
     inline static int copyAssignCount;
     inline static int moveAssignCount;
 
-
     static void resetCounts() {
         liveCount = 0;
         ctorCount = 0;
@@ -30,7 +29,6 @@ public:
     }
 
     ~LifetimeTracker() {
-        assert(m_alive && "Object called for destruction was not alive.\n");
         ++dtorCount;
         --liveCount;
         m_alive = false;
@@ -46,6 +44,7 @@ public:
     LifetimeTracker(LifetimeTracker&& other) noexcept
         : m_alive { other.m_alive } {
         assert(other.m_alive && "Moved from class was not alive\n");
+        other.m_alive = false;
         ++moveCtorCount;
         ++liveCount;
     }
@@ -57,6 +56,7 @@ public:
         assert(other.m_alive && "Copy assigned from is not alive.\n");
         ++copyAssignCount;
         m_alive = other.m_alive;
+
         return *this;
     }
 
@@ -67,6 +67,20 @@ public:
         assert(other.m_alive && "Move assigned from is not alive.\n");
         ++moveAssignCount;
         m_alive = other.m_alive;
+
+        other.m_alive = false;
         return *this;
+    }
+
+    friend std::ostream& operator<<(std::ostream& out, const LifetimeTracker& tracker) {
+        out << "tracker isAlive: " << tracker.m_alive << "\n";
+        out << "liveCount: " << tracker.liveCount << "\n";
+        out << "ctorCount: " << tracker.ctorCount << "\n";
+        out << "dtorCount: " << tracker.dtorCount << "\n";
+        out << "copyCtorCount: " << tracker.copyCtorCount << "\n";
+        out << "moveCtorCount: " << tracker.moveCtorCount << "\n";
+        out << "copyAssignCount: " << tracker.copyAssignCount << "\n";
+        out << "moveAssignCount: " << tracker.moveAssignCount << "\n";
+        return out;
     }
 };
