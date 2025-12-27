@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 #include <systems_dsa/vector.hpp>
 #include "utils/lifetime_tracker.hpp"
+#include "utils/throws_on_copy.hpp"
 
 TEST(VectorTest, PushBackIncreasesSizeCapacity) {
+    [[maybe_unused]]ThrowsOnCopy myClass {};
     systems_dsa::vector<int> myVec;
     myVec.push_back(2);
     myVec.push_back(8);
@@ -133,4 +135,29 @@ TEST(VectorTest, EmplaceBackConstructsInContainer) {
     EXPECT_EQ(LifetimeTracker::ctorCount, 2);
 
     LifetimeTracker::resetCounts();
+}
+
+TEST(VectorTest, ContainerUnmodifiedAfterException) {
+    ThrowsOnCopy::resetCounts();
+    systems_dsa::vector<ThrowsOnCopy> myVec;
+    myVec.reserve(8);
+    ThrowsOnCopy::throwOnInstance = 6;
+    if (myVec.capacity() != 8) {
+        FAIL() << "Capacity did not equal 8";
+    }
+    for (int i {}; i < 4; ++i) {
+        ThrowsOnCopy myObj { i };
+        myVec.push_back(myObj);
+    }
+    ASSERT_EQ(ThrowsOnCopy::copyCtorCount, 4);
+    EXPECT_ANY_THROW(myVec.reserve(10));
+
+    try {
+        for (size_t i {}; i < myVec.size(); ++i) {
+            EXPECT_EQ(myVec[i].id, static_cast<int>(i));
+        }
+    } catch (const std::exception& e) {
+        FAIL() << "Escaped exception: " << e.what();
+    }
+
 }

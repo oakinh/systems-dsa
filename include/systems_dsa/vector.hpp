@@ -170,27 +170,29 @@ namespace systems_dsa {
     // Pushing & popping
     // ---------------------
         void push_back(const T& value) noexcept {
-            if (!m_data) {
-                allocate(2);
-            }
-
-            if (m_size == m_capacity) {
-                expand();
-            }
-
-            new (m_data + m_size) T(value);
-            ++m_size;
+            // if (!m_data) {
+            //     allocate(2);
+            // }
+            //
+            // if (m_size == m_capacity) {
+            //     expand();
+            // }
+            //
+            // new (m_data + m_size) T(value);
+            // ++m_size;
+            emplace_back(value);
         }
 
         void push_back(T&& value) {
-            if (!m_data) {
-                allocate(2);
-            }
-            if (m_size == m_capacity) {
-                expand();
-            }
-            new (m_data + m_size) T(std::move(value));
-            ++m_size;
+            // if (!m_data) {
+            //     allocate(2);
+            // }
+            // if (m_size == m_capacity) {
+            //     expand();
+            // }
+            // new (m_data + m_size) T(std::move_if_noexcept(value));
+            // ++m_size;
+            emplace_back(std::move(value));
         }
 
         template <typename... Args>
