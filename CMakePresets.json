@@ -56,14 +56,25 @@
         "CMAKE_CXX_FLAGS": "-stdlib=libc++ -O3 -march=native -DNDEBUG",
         "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++"
       }
+    },
+    {
+      "name": "bench",
+      "inherits": "release",
+      "binaryDir": "${sourceDir}/build/bench",
+      "cacheVariables": {
+        "SYSTEMS_DSA_BUILD_BENCHMARKS": "ON",
+        "SYSTEMS_DSA_BUILD_TESTS": "OFF"
+      }
     }
+
   ],
   "buildPresets": [
     { "name": "base", "configurePreset": "base" },
     { "name": "libcxx", "configurePreset": "libcxx" },
     { "name": "asan", "configurePreset": "asan" },
     { "name": "tsan", "configurePreset": "tsan" },
-    { "name": "release", "configurePreset": "release" }
+    { "name": "release", "configurePreset": "release" },
+    { "name":  "bench", "configurePreset":  "bench"}
   ],
   "testPresets": [
     { "name": "asan", "configurePreset": "asan" },
