@@ -47,6 +47,7 @@ target_include_directories(systems_dsa
 # This is the key "CLion/Nova just works" move: files are in a target.
 target_sources(systems_dsa INTERFACE
         include/systems_dsa/vector.hpp
+        include/systems_dsa/hash_map.hpp
 )
 
 # ------------------------------------------------------------------------------
@@ -101,12 +102,14 @@ if(SYSTEMS_DSA_BUILD_TESTS AND BUILD_TESTING)
     set(SYSTEMS_DSA_TEST_SOURCES
             tests/hello_test.cpp
             tests/vector_test.cpp
+            tests/hash_map_test.cpp
     )
 
     # Include test helper headers too (helps CLion index them as part of the target).
     set(SYSTEMS_DSA_TEST_HEADERS
             tests/utils/lifetime_tracker.hpp
             tests/utils/throws_on_copy.hpp
+
     )
 
     add_executable(systems_dsa_tests
