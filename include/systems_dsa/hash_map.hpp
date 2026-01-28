@@ -21,7 +21,7 @@ template <
     class KeyEqual = std::equal_to<K>
     >
 class hash_map {
-    vector<Bucket<K, V>> hashMap;
+    vector<Bucket<K, V>> buckets;
     size_t tombstones {};
     size_t size {};
     constexpr static float maxLoadFactor { 0.7f };
@@ -33,30 +33,25 @@ class hash_map {
 
     // Constructor with size
     hash_map(size_t n)
-        : size{ n }
-        {}
+        : size{ n } {
+        buckets.reserve(4);
+    }
 
     // Copy constructor
-    hash_map(const hash_map& hashMap) {
+    hash_map(const hash_map& other) = delete;
 
-    }
-
-    // TODO: Can I make this noexcept?
     // Move constructor
-    hash_map(hash_map&& hashMap) {
-
-    }
+    hash_map(hash_map&& other) noexcept = default;
 
     // Copy assignment operator
-    hash_map& operator=(const hash_map& hashMap) {
+    hash_map& operator=(const hash_map& other) = delete;
 
-    }
-
+    // hash_map myhashmap {}
+    // hash_map someotherhashMap {};
+    // hash_map myhashmap = someotherhashmap
     // Move assignment operator
-    hash_map& operator=(hash_map&& hashMap) {
+    hash_map& operator=(hash_map&& other) noexcept = default;
 
-    }
-
-
+    ~hash_map() = default;
 };
 }

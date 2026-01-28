@@ -121,13 +121,29 @@ namespace systems_dsa {
             return m_size == 0;
         }
 
-      constexpr void reserve(size_t newCapacity) {
+        constexpr void reserve(size_t newCapacity) {
             if (newCapacity <= m_capacity) {
                 std::cerr << "Cannot reserve less than or equal to current capacity.\n";
                 return;
             }
             allocate(newCapacity);
         };
+
+        constexpr void resize(size_t newSize) {
+            if (newSize == m_size) {
+                std::cerr << "Cannot resize to equal to current size.\n";
+            } else if (newSize > m_size) {
+                destroyData(m_data - newSize, newSize); // TODO: Verify this is correct
+            } else {
+                size_t oldSize { m_size };
+                allocate(newSize);
+                for (size_t i { oldSize }; i < (oldSize + oldSize); ++i) {
+                    m_data[i]();
+                }
+            }
+
+
+        }
 
         void shrink_to_fit() {
             if (m_size == m_capacity) {
