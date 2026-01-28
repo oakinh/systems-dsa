@@ -137,6 +137,18 @@ TEST(VectorTest, EmplaceBackConstructsInContainer) {
     LifetimeTracker::resetCounts();
 }
 
+TEST(VectorTest, ResizeDefaultConstructs) {
+    systems_dsa::vector<int> myVec { 2 };
+    myVec[0] = 10;
+    myVec[1] = 22;
+    myVec.resize(10);
+    EXPECT_EQ(myVec[0], 10);
+    EXPECT_EQ(myVec[1], 22);
+    for (size_t i { 2 }; i < myVec.size(); ++i) {
+        EXPECT_EQ(myVec[i], 0);
+    }
+}
+
 TEST(VectorTest, ContainerUnmodifiedAfterException) {
     ThrowsOnCopy::resetCounts();
     systems_dsa::vector<ThrowsOnCopy> myVec;
