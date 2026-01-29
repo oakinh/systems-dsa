@@ -14,7 +14,7 @@ namespace systems_dsa {
         T* m_data { nullptr };
 
         constexpr void allocate(size_t capacity) {
-            void* rawMem = ::operator new(sizeof(T) * capacity);
+            void* rawMem = ::operator new(sizeof(T) * capacity, static_cast<std::align_val_t>(alignof(T)));
 
             if (!m_data) {
                 // Initial allocation
@@ -29,10 +29,12 @@ namespace systems_dsa {
                     }
                 } catch (...) {
                     destroyData(newData, constructed);
+                    deallocate(newData);
                     throw;
                 }
 
                 destroyData(m_data, m_size);
+                deallocate(m_data);
                 m_data = newData;
             }
 
@@ -60,7 +62,10 @@ namespace systems_dsa {
                     (data + (i - 1))->~T();
                 }
             }
-            ::operator delete (static_cast<void*>(data));
+
+        }
+        void deallocate(T* data) noexcept {
+            ::operator delete (static_cast<void*>(data), static_cast<std::align_val_t>(alignof(T)));
         }
     public:
     // ---------------------
@@ -129,16 +134,17 @@ namespace systems_dsa {
             allocate(newCapacity);
         };
 
+        // TODO: Find the bug with resizing
         constexpr void resize(size_t newSize) {
             if (newSize == m_size) {
                 std::cerr << "Cannot resize to equal to current size.\n";
-            } else if (newSize > m_size) {
+            } else if (newSize < m_size) {
                 destroyData(m_data - newSize, newSize); // TODO: Verify this is correct
             } else {
                 size_t oldSize { m_size };
                 allocate(newSize);
                 for (size_t i { oldSize }; i < (oldSize + oldSize); ++i) {
-                    m_data[i]();
+                    new (m_data + i) T();
                 }
             }
 

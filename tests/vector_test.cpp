@@ -74,6 +74,7 @@ TEST(VectorTest, ElementsIntactPostReserve) {
 
 TEST(VectorTest, ContainerExpandsAfterPushes) {
     systems_dsa::vector<std::string> myVec {};
+    size_t oldCapacity { myVec.capacity() };
     std::vector<std::string> strVec {
         "Hello",
         "World",
@@ -91,6 +92,10 @@ TEST(VectorTest, ContainerExpandsAfterPushes) {
     }
 
     EXPECT_GE(myVec.capacity(), strVec.size());
+    EXPECT_GE(myVec.capacity(), oldCapacity);
+    for (size_t i {}; i < myVec.size(); ++i) {
+        EXPECT_EQ(myVec[i], strVec[i]);
+    }
 }
 
 TEST(VectorTest, ConstructionWorks) {
@@ -138,7 +143,12 @@ TEST(VectorTest, EmplaceBackConstructsInContainer) {
 }
 
 TEST(VectorTest, ResizeDefaultConstructs) {
+    // systems_dsa::vector<LifetimeTracker> myVec { 2 };
+    // myVec.resize(5);
+    // EXPECT_EQ(LifetimeTracker::ctorCount, 5);
+    // LifetimeTracker::resetCounts();
     systems_dsa::vector<int> myVec { 2 };
+    myVec.resize(5);
     myVec[0] = 10;
     myVec[1] = 22;
     myVec.resize(10);

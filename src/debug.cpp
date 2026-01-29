@@ -19,5 +19,11 @@ int main() {
         std::cout << myVec[i] << '\n';
     }
 
+    systems_dsa::vector<int> anotherVec { 2 };
+        myVec.resize(5);
+        myVec[0] = 10;
+        myVec[1] = 22;
+        myVec.resize(10);
+
 	return 0;
 }
