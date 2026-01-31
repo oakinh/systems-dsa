@@ -146,19 +146,18 @@ namespace systems_dsa {
             allocate(newCapacity);
         };
 
-        // TODO: Find the bug with resizing
         constexpr void resize(size_t newSize) {
             if (newSize == m_size) {
                 std::cerr << "Cannot resize to equal to current size.\n";
             } else if (newSize < m_size) {
                 // Decrease size
                 assert(m_size - newSize > 0);
-                destroyData(m_data + newSize, m_size - newSize); // TODO: Verify this is correct
+                destroyData(m_data + newSize, m_size - newSize);
                 m_size = newSize;
             } else {
                 // Increase size
                 size_t oldSize { m_size };
-                allocate(getExpandedCapacity(newSize));
+                allocate(getExpandedCapacity(newSize)); // TODO: Confirm this is intended behavior. Maybe we want capacity to equal size?
                 for (size_t i { oldSize }; i < newSize; ++i) {
                     new (m_data + i) T();
                 }
