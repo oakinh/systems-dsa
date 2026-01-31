@@ -51,9 +51,14 @@ namespace systems_dsa {
                 return;
             }
             //size_t newCapacity { m_capacity + ( m_capacity / 2)};
-            size_t newCapacity { desiredCapacity.value_or(m_capacity + ( m_capacity / 2)) };
+            size_t newCapacity { desiredCapacity.value_or(getExpandedCapacity()) };
             assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
             allocate(newCapacity);
+        }
+
+        size_t getExpandedCapacity(std::optional<size_t> newSize = std::nullopt) const {
+            size_t cap { newSize.value_or(m_capacity)};
+            return (cap + cap / 2);
         }
 
         void destroyData(T* data, size_t size) noexcept {
@@ -83,6 +88,7 @@ namespace systems_dsa {
         // Destructor
         ~vector() {
             destroyData(m_data, m_size);
+            deallocate(m_data);
         }
         // Copy constructor ?
         vector(const vector& other) = delete;
@@ -139,13 +145,18 @@ namespace systems_dsa {
             if (newSize == m_size) {
                 std::cerr << "Cannot resize to equal to current size.\n";
             } else if (newSize < m_size) {
-                destroyData(m_data - newSize, newSize); // TODO: Verify this is correct
+                // Decrease size
+                assert(m_size - newSize > 0);
+                destroyData(m_data + newSize, m_size - newSize); // TODO: Verify this is correct
+                m_size = newSize;
             } else {
+                // Increase size
                 size_t oldSize { m_size };
-                allocate(newSize);
-                for (size_t i { oldSize }; i < (oldSize + oldSize); ++i) {
+                allocate(getExpandedCapacity(newSize));
+                for (size_t i { oldSize }; i < newSize; ++i) {
                     new (m_data + i) T();
                 }
+                m_size = newSize;
             }
 
 

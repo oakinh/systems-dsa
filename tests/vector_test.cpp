@@ -143,10 +143,6 @@ TEST(VectorTest, EmplaceBackConstructsInContainer) {
 }
 
 TEST(VectorTest, ResizeDefaultConstructs) {
-    // systems_dsa::vector<LifetimeTracker> myVec { 2 };
-    // myVec.resize(5);
-    // EXPECT_EQ(LifetimeTracker::ctorCount, 5);
-    // LifetimeTracker::resetCounts();
     systems_dsa::vector<int> myVec { 2 };
     myVec.resize(5);
     myVec[0] = 10;
