@@ -156,9 +156,13 @@ TEST(VectorTest, ResizeDefaultConstructs) {
 }
 
 TEST(VectorTest, ResizeCorrectlyDecreasesSize) {
-    systems_dsa::vector<int> myVec(5);
+    systems_dsa::vector<int> myVec { 2, 76, 23, 45, 90 };
     myVec.resize(2);
     EXPECT_EQ(myVec.size(), 2);
+    myVec.push_back(100);
+    EXPECT_EQ(myVec[0], 2);
+    EXPECT_EQ(myVec[1], 76);
+    EXPECT_EQ(myVec[2], 100);
 }
 
 TEST(VectorTest, ContainerUnmodifiedAfterException) {
