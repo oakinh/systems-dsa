@@ -84,6 +84,12 @@ namespace systems_dsa {
             allocate(n);
         }
         // TODO: Add constructor that takes a std::initializer_list
+        vector(std::initializer_list<T> list) {
+            allocate(list.size());
+            for (auto element : list) {
+                push_back(std::move_if_noexcept(element));
+            }
+        }
 
         // Destructor
         ~vector() {

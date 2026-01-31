@@ -113,7 +113,7 @@ TEST(VectorTest, ConstructionWorks) {
 }
 
 TEST(VectorTest, MoveAndDestructionWorks) {
-    systems_dsa::vector<LifetimeTracker> myVec {5 };
+    systems_dsa::vector<LifetimeTracker> myVec(5);
     LifetimeTracker::resetCounts();
     for (int i {}; i < 3; ++i) {
         myVec.push_back(LifetimeTracker{});
@@ -130,7 +130,7 @@ TEST(VectorTest, MoveAndDestructionWorks) {
 }
 
 TEST(VectorTest, EmplaceBackConstructsInContainer) {
-    systems_dsa::vector<LifetimeTracker> myVec {10 };
+    systems_dsa::vector<LifetimeTracker> myVec(10);
     LifetimeTracker::resetCounts();
     for (size_t i {}; i < 2; ++i) {
         myVec.emplace_back();
@@ -143,7 +143,7 @@ TEST(VectorTest, EmplaceBackConstructsInContainer) {
 }
 
 TEST(VectorTest, ResizeDefaultConstructs) {
-    systems_dsa::vector<int> myVec { 2 };
+    systems_dsa::vector<int> myVec(2);
     myVec.resize(5);
     myVec[0] = 10;
     myVec[1] = 22;
@@ -153,6 +153,12 @@ TEST(VectorTest, ResizeDefaultConstructs) {
     for (size_t i { 2 }; i < myVec.size(); ++i) {
         EXPECT_EQ(myVec[i], 0);
     }
+}
+
+TEST(VectorTest, ResizeCorrectlyDecreasesSize) {
+    systems_dsa::vector<int> myVec(5);
+    myVec.resize(2);
+    EXPECT_EQ(myVec.size(), 2);
 }
 
 TEST(VectorTest, ContainerUnmodifiedAfterException) {
