@@ -19,7 +19,17 @@ class hash_map {
     using value_type = std::pair<K, V>;
     struct Bucket {
         State state = State::OPEN;
-        alignas(value_type) std::byte storage[sizeof(value_type)];
+        alignas(value_type) std::byte storage[sizeof(value_type)]; // Uninitialized memory
+
+        value_type* ptr() noexcept {
+            return std::launder(reinterpret_cast<value_type*>(storage));
+        }
+        const value_type* ptr() const noexcept {
+            return std::launder(reinterpret_cast<const value_type*>(storage));
+        }
+
+        K& key() noexcept { return ptr()->first; }
+        V& val() noexcept { return ptr()->second; }
     };
     vector<Bucket> m_buckets;
     size_t m_tombstones {};
@@ -27,10 +37,43 @@ class hash_map {
     constexpr static float maxLoadFactor { 0.7f };
     Hasher m_hasher;
     KeyEqual m_eq;
+    static constexpr std::size_t sentinelIndex { std::numeric_limits<std::size_t>::max() };
 private:
     float getLoadFactor() const {
         return m_tombstones + m_filled / m_buckets.size();
     }
+
+    std::size_t probe(std::optional<K> key = std::nullopt) {
+        // Whether for inserting or seeking, probing stops on an OPEN bucket
+        size_t iterations {};
+        std::size_t bucketSize { m_buckets.size() };
+        std::size_t index { key.has_value() ? m_hasher(key) % bucketSize : 0 };
+
+        bool success = true;
+        while (iterations < bucketSize && m_buckets[index].state != State::OPEN) {
+            if (key.has_value() && m_buckets[index].state == State::OPEN) {
+                // Did not find key
+                success = false;
+                break;
+            }
+            if (
+                key.has_value()
+                && m_buckets[index].state == State::FILLED
+                && m_buckets[index].key() == key
+                ) {
+                // Found key
+                break;
+            }
+            ++index;
+            ++iterations;
+            assert(iterations < bucketSize && "There was no OPEN bucket during probe\n");
+            if (index >= bucketSize) {
+                index = 0; // More performant than doing division every loop iteration
+            }
+        } // When key.has_value(), returns a sentinel value if we find an OPEN bucket
+        return success ? index : sentinelIndex;
+    }
+
 public:
     // Default constructor
     hash_map() = default;
@@ -49,9 +92,6 @@ public:
     // Copy assignment operator
     hash_map& operator=(const hash_map& other) = delete;
 
-    // hash_map myhashmap {}
-    // hash_map someotherhashMap {};
-    // hash_map myhashmap = someotherhashmap
     // Move assignment operator
     hash_map& operator=(hash_map&& other) noexcept = default;
 
@@ -60,7 +100,7 @@ public:
     ///////////////
     // Modifiers //
     ///////////////
-    void insert(std::pair<K, V> pair) {
+    void insert(std::pair<K, V> pair) { // TODO: Figure out the overloads for this. r-value reference, forwarding reference, etc.
         std::size_t hashed { m_hasher(pair.first) };
         std::size_t bucketSize { m_buckets.size() };
         std::size_t index { hashed % bucketSize };
@@ -69,18 +109,23 @@ public:
             State::FILLED,
             pair
         };
+
         size_t iterations {};
         while (iterations < bucketSize && m_buckets[index].state != State::OPEN) {
             ++index;
             ++iterations;
             assert(iterations < bucketSize && "There was no OPEN bucket to insert into\n");
             if (index >= bucketSize) {
-                index = index % bucketSize;
+                //index = index % bucketSize;
+                index = 0; // More performant than doing division every loop iteration
             }
         }
 
         if (m_buckets[index].state == State::OPEN) {
-            m_buckets[index] = std::move_if_noexcept(bucket);
+            new (m_buckets[index].storage) value_type(pair);
+            m_buckets[index].state = State::FILLED;
+        } else {
+            std::cout << "State was not open during insert, this statement should not have been reached\n";
         }
     }
 };
