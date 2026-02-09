@@ -38,19 +38,19 @@ class hash_map {
     Hasher m_hasher;
     KeyEqual m_eq;
     static constexpr std::size_t sentinelIndex { std::numeric_limits<std::size_t>::max() };
-private:
+
     float getLoadFactor() const {
         return m_tombstones + m_filled / m_buckets.size();
     }
 
-    std::size_t probe(std::optional<K> key = std::nullopt) {
+    std::size_t probe(std::size_t index, std::optional<K> key = std::nullopt) {
         // Whether for inserting or seeking, probing stops on an OPEN bucket
+
         size_t iterations {};
         std::size_t bucketSize { m_buckets.size() };
-        std::size_t index { key.has_value() ? m_hasher(key) % bucketSize : 0 };
 
         bool success = true;
-        while (iterations < bucketSize && m_buckets[index].state != State::OPEN) {
+        while (iterations < bucketSize && m_buckets[index].state != State::OPEN) { // TODO: this could probably be a for loop
             if (key.has_value() && m_buckets[index].state == State::OPEN) {
                 // Did not find key
                 success = false;
@@ -103,12 +103,9 @@ public:
     void insert(std::pair<K, V> pair) { // TODO: Figure out the overloads for this. r-value reference, forwarding reference, etc.
         std::size_t hashed { m_hasher(pair.first) };
         std::size_t bucketSize { m_buckets.size() };
-        std::size_t index { hashed % bucketSize };
 
-        Bucket bucket {
-            State::FILLED,
-            pair
-        };
+        //std::size_t index { hashed % bucketSize };
+        std::size_t index { probe(hashed % bucketSize) };
 
         size_t iterations {};
         while (iterations < bucketSize && m_buckets[index].state != State::OPEN) {
@@ -127,6 +124,10 @@ public:
         } else {
             std::cout << "State was not open during insert, this statement should not have been reached\n";
         }
+    }
+
+    std::size_t find(K key) {
+
     }
 };
 }
