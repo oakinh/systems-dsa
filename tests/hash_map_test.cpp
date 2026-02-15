@@ -6,10 +6,16 @@ TEST(HashMapTest, DefaultConstructs) {
     EXPECT_GT(hashMap.size(), 0);
 }
 
+TEST(HashMapTest, SizeConstructs) {
+    systems_dsa::hash_map<int, int> hashMap { 10 };
+    EXPECT_EQ(hashMap.size(), 10);
+}
+
 TEST(HashMapTest, InsertAcceptsEither1Or2Args) {
     systems_dsa::hash_map<int, int> hashMap {};
     hashMap.insert(10, 1001);
     hashMap.insert({23, 100});
+    EXPECT_NO_FATAL_FAILURE();
 }
 
 TEST(HashMapTest, FindReturnsCorrectValue) {

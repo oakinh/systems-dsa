@@ -58,8 +58,11 @@ class hash_map {
         return m_tombstones + m_filled / m_buckets.size();
     }
 
-    std::size_t getHashedKeyIndex(const K& key) const {
-        return std::size_t { m_hasher(key) % m_buckets.size() };
+    std::size_t getKeyIndex(const K& key) const {
+        std::size_t hashedKey { m_hasher(key) };
+        return hashedKey > 0
+            ? hashedKey % m_buckets.size()
+            : 0;
     }
     // TODO: Write a template implementation function, that enables both const member func and non-const calling
     std::size_t probe(std::size_t index, const std::optional<K> key = std::nullopt) const {
@@ -70,7 +73,7 @@ class hash_map {
         //while (iterations < bucketSize && m_buckets[index].state != State::OPEN) { // TODO: this could probably be a for loop
         for (std::size_t iterations {};
             iterations < bucketSize && m_buckets[index].state != State::OPEN;
-            ++iterations, ++index) {
+            ++iterations, index = (index + 1) % bucketSize) {
             if (key.has_value() && m_buckets[index].state == State::OPEN) {
                 // Did not find key
                 failure = true;
@@ -79,14 +82,10 @@ class hash_map {
             if (
                 key.has_value()
                 && m_buckets[index].state == State::FILLED
-                && m_buckets[index].key() == key.val()
+                && m_buckets[index].key() == key.value()
                 ) {
                 // Found key
                 break;
-            }
-
-            if (index >= bucketSize) {
-                index = 0; // More performant than doing division every loop iteration
             }
         } // When key.has_value(), returns a sentinel value if we find an OPEN bucket
         if (!key.has_value()) {
@@ -96,20 +95,22 @@ class hash_map {
     }
 
     std::size_t probeForKey(const K& key) const {
-        return probe(getHashedKeyIndex(key), key);
+        return probe(getKeyIndex(key), key);
     }
 
     std::size_t probeForInsert(const K& key) const {
-        return probe(getHashedKeyIndex(key));
+        return probe(getKeyIndex(key));
     }
 
 public:
     // Default constructor
-    hash_map() = default;
+    hash_map() {
+        m_buckets.reserve(10);
+    };
 
     // Constructor with size
     explicit hash_map(size_t n) {
-        m_buckets.resize(n);
+        m_buckets.reserve(n);
     }
 
     // Copy constructor
@@ -149,6 +150,7 @@ public:
         if (m_buckets[index].state == State::OPEN) {
             new (m_buckets[index].storage) value_type(pair);
             m_buckets[index].state = State::FILLED;
+            ++m_filled;
         } else {
             assert(false && "State was not open during insert, this statement should not have been reached in insert");
         }
@@ -156,11 +158,11 @@ public:
 
     V& find(const K& key) {
         std::size_t index { probeForKey(key) };
-        return m_buckets[index].value();
+        return m_buckets[index].val();
     }
     const V& find(const K& key) const {
         std::size_t index { probeForKey(key) };
-        return m_buckets[index].value();
+        return m_buckets[index].val();
     }
 
     bool contains(const K& key) const {
@@ -183,7 +185,7 @@ public:
         if (index >= size()) {
             throw std::out_of_range("The key provided was not found in the hashmap\n");
         }
-        return m_buckets[index].value();
+        return m_buckets[index].val();
     }
 
     const V& at(const K& key) const {
@@ -191,7 +193,7 @@ public:
         if (index >= size()) {
             throw std::out_of_range("The key provided was not found in the hashmap\n");
         }
-        return m_buckets[index].value();
+        return m_buckets[index].val();
     }
 
 };

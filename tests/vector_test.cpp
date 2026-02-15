@@ -144,15 +144,19 @@ TEST(VectorTest, EmplaceBackConstructsInContainer) {
 
 TEST(VectorTest, ResizeDefaultConstructs) {
     systems_dsa::vector<int> myVec(2);
-    myVec.resize(5);
+    std::size_t newSize1 { 5 };
+    myVec.resize(newSize1);
+    EXPECT_EQ(myVec.size(), newSize1);
     myVec[0] = 10;
     myVec[1] = 22;
-    myVec.resize(10);
+    std::size_t newSize2 { 10 };
+    myVec.resize(newSize2);
     EXPECT_EQ(myVec[0], 10);
     EXPECT_EQ(myVec[1], 22);
     for (size_t i { 2 }; i < myVec.size(); ++i) {
         EXPECT_EQ(myVec[i], 0);
     }
+    EXPECT_EQ(myVec.size(), newSize2);
 }
 
 TEST(VectorTest, ResizeCorrectlyDecreasesSize) {

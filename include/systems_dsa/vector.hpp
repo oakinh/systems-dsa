@@ -2,14 +2,14 @@
 #include <cassert>
 #include <iostream>
 #include <type_traits>
-#include <memory>
 #include <optional>
 
 namespace systems_dsa {
     template <typename T>
     class vector {
     private:
-        size_t m_capacity { 2 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
+        constexpr static std::size_t startingCapacity { 2 };
+        size_t m_capacity { startingCapacity }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
         size_t m_size {};
         T* m_data { nullptr };
 
@@ -77,7 +77,9 @@ namespace systems_dsa {
     // Constructors / Destructor
     // ---------------------
         // Default constructor
-        vector() = default;
+        vector() {
+            allocate(startingCapacity);
+        };
 
         // Constructor with size
         explicit vector(size_t n) : m_capacity { n }  {
@@ -218,7 +220,7 @@ namespace systems_dsa {
         template <typename... Args>
         void emplace_back(Args&&... args) {
             if (!m_data) {
-                allocate(2);
+                allocate(startingCapacity);
             }
             if (m_size == m_capacity) {
                 expand();
