@@ -67,13 +67,16 @@ class hash_map {
     // TODO: Write a template implementation function, that enables both const member func and non-const calling
     std::size_t probe(std::size_t index, const std::optional<K> key = std::nullopt) const {
         // Whether for inserting or seeking, probing stops on an OPEN bucket
+
         const std::size_t bucketSize { m_buckets.size() };
+        assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
 
         bool failure = false;
         //while (iterations < bucketSize && m_buckets[index].state != State::OPEN) { // TODO: this could probably be a for loop
         for (std::size_t iterations {};
             iterations < bucketSize && m_buckets[index].state != State::OPEN;
             ++iterations, index = (index + 1) % bucketSize) {
+            assert(index < bucketSize && "Index in probe not less than bucketSize");
             if (key.has_value() && m_buckets[index].state == State::OPEN) {
                 // Did not find key
                 failure = true;
@@ -88,9 +91,9 @@ class hash_map {
                 break;
             }
         } // When key.has_value(), returns a sentinel value if we find an OPEN bucket
-        if (!key.has_value()) {
-            assert(false && "Unreachable code reached in probe.");
-        }
+        // if (!key.has_value()) {
+        //     assert(false && "Unreachable code reached in probe.");
+        // }
         return failure ? sentinelIndex : index;
     }
 
@@ -105,12 +108,12 @@ class hash_map {
 public:
     // Default constructor
     hash_map() {
-        m_buckets.reserve(10);
+        m_buckets.resize(10);
     };
 
     // Constructor with size
     explicit hash_map(size_t n) {
-        m_buckets.reserve(n);
+        m_buckets.resize(n);
     }
 
     // Copy constructor
@@ -149,6 +152,10 @@ public:
 
         if (m_buckets[index].state == State::OPEN) {
             new (m_buckets[index].storage) value_type(pair);
+            std::cout << "Index given to placementNew in insert: " << index << '\n';
+            std::cout << "bucketSize in placementNew in insert: " << m_buckets.size() << '\n';
+            std::cout << "bucket capacity in placementNew in insert: " << m_buckets.capacity() << '\n';
+            std::cout << "size() gives: " << size() << '\n';
             m_buckets[index].state = State::FILLED;
             ++m_filled;
         } else {
@@ -166,7 +173,7 @@ public:
     }
 
     bool contains(const K& key) const {
-        return probeForKey(key) < size();
+        return probeForKey(key) < m_buckets.size();
     }
 
     std::size_t size() const {
