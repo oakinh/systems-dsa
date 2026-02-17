@@ -105,6 +105,24 @@ class hash_map {
         return probe(getKeyIndex(key));
     }
 
+    template <typename vt>
+    void insert_impl(vt&& pair) {
+        std::size_t index { probeForInsert(pair.first) };
+
+        if (m_buckets[index].state == State::OPEN) {
+            new (m_buckets[index].storage) value_type(std::forward<value_type>(pair));
+
+            std::cout << "Index given to placementNew in insert: " << index << '\n';
+            std::cout << "bucketSize in placementNew in insert: " << m_buckets.size() << '\n';
+            std::cout << "bucket capacity in placementNew in insert: " << m_buckets.capacity() << '\n';
+            std::cout << "size() gives: " << size() << '\n';
+            m_buckets[index].state = State::FILLED;
+            ++m_filled;
+        } else {
+            assert(false && "State was not open during insert, this statement should not have been reached in insert");
+        }
+    }
+
 public:
     // Default constructor
     hash_map() {
@@ -133,34 +151,18 @@ public:
     ///////////////
     // Modifiers //
     ///////////////
-    void insert(K first, V second) {
-        return insert({ first, second });
+    void insert(const K& first, const V& second) {
+        insert_impl(value_type{std::move(first), std::move(second)});
     }
-    void insert(value_type pair) { // TODO: Figure out the overloads for this. r-value reference, forwarding reference, etc.
-        std::size_t index { probeForInsert(pair.first) };
 
-        // size_t iterations {};
-        // while (iterations < bucketSize && m_buckets[index].state != State::OPEN) {
-        //     ++index;
-        //     ++iterations;
-        //     assert(iterations < bucketSize && "There was no OPEN bucket to insert into\n");
-        //     if (index >= bucketSize) {
-        //         //index = index % bucketSize;
-        //         index = 0; // More performant than doing division every loop iteration
-        //     }
-        // }
+    // TODO: R value K and V?
 
-        if (m_buckets[index].state == State::OPEN) {
-            new (m_buckets[index].storage) value_type(pair);
-            std::cout << "Index given to placementNew in insert: " << index << '\n';
-            std::cout << "bucketSize in placementNew in insert: " << m_buckets.size() << '\n';
-            std::cout << "bucket capacity in placementNew in insert: " << m_buckets.capacity() << '\n';
-            std::cout << "size() gives: " << size() << '\n';
-            m_buckets[index].state = State::FILLED;
-            ++m_filled;
-        } else {
-            assert(false && "State was not open during insert, this statement should not have been reached in insert");
-        }
+    void insert(const value_type& pair) {
+        insert_impl(pair);
+    }
+
+    void insert(value_type&& pair) {
+        insert_impl(std::move(pair));
     }
 
     V& find(const K& key) {
