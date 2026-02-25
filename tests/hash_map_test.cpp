@@ -55,4 +55,9 @@ TEST(HashMapTest, ContainsReturnsCorrectBool) {
         std::cout << pair.first << '\n';
         EXPECT_EQ(hashMap.contains(pair.first), true);
     }
+
+    std::vector<int> nonKeyInts { 4, 5, 100, 22000, 101, 103, 107, 110, 102 };
+    for (const auto& num : nonKeyInts) {
+        EXPECT_EQ(hashMap.contains(num), false);
+    }
 }
