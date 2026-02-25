@@ -1,11 +1,23 @@
 #pragma once
 #include <systems_dsa/vector.hpp>
+#include <concepts>
 
 namespace systems_dsa {
+
+template <typename T>
+concept Hashable = requires(T a) {
+    { std::hash<T>(a) } -> std::convertible_to<std::size_t>;
+};
+
+template <typename H, typename K>
+concept ValidHasher =
+    std::regular_invocable<H, const K&> &&
+        std::convertible_to<std::invoke_result_t<H, const K&>, std::size_t>;
+
 template <
-    typename K,
+    Hashable K,
     typename V,
-    class Hasher = std::hash<K>,
+    ValidHasher Hasher = std::hash<K>,
     class KeyEqual = std::equal_to<K>
     >
 class hash_map {
@@ -45,6 +57,7 @@ class hash_map {
         }
     };
     // Data
+    //std::vector<Bucket> m_buckets {};
     vector<Bucket> m_buckets {};
     size_t m_tombstones {};
     size_t m_filled { 0 }; // Filled count only
@@ -66,28 +79,37 @@ class hash_map {
     }
     // TODO: Write a template implementation function, that enables both const member func and non-const calling
     std::size_t probe(std::size_t index, const std::optional<K> key = std::nullopt) const {
-        // Whether for inserting or seeking, probing stops on an OPEN bucket
-
+        // For finding a key, probing stops only on an OPEN bucket
+        // Probing for insertion, probing stops on an OPEN or TOMBSTONE bucket
+        bool forInsert = !key.has_value();
         const std::size_t bucketSize { m_buckets.size() };
         assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
 
         bool failure = false;
-        //while (iterations < bucketSize && m_buckets[index].state != State::OPEN) { // TODO: this could probably be a for loop
-        for (std::size_t iterations {};
-            iterations < bucketSize && m_buckets[index].state != State::OPEN;
-            ++iterations, index = (index + 1) % bucketSize) {
+        for (
+            std::size_t iterations {};
+            iterations < bucketSize && m_buckets[index].state == State::OPEN;
+            ++iterations, index = (index + 1) % bucketSize
+            ) {
             assert(index < bucketSize && "Index in probe not less than bucketSize");
-            if (key.has_value() && m_buckets[index].state == State::OPEN) {
+            auto& bucket = m_buckets[index];
+            State state = bucket.state;
+            if (!forInsert && state == State::OPEN) {
                 // Did not find key
                 failure = true;
                 break;
             }
             if (
-                key.has_value()
-                && m_buckets[index].state == State::FILLED
-                && m_buckets[index].key() == key.value()
+                !forInsert
+                && state == State::FILLED
+                && bucket.key() == key.value()
                 ) {
                 // Found key
+                break;
+            }
+
+            if (forInsert &&state == State::TOMBSTONE) {
+                // Found bucket for inserting
                 break;
             }
         } // When key.has_value(), returns a sentinel value if we find an OPEN bucket
@@ -108,19 +130,22 @@ class hash_map {
     template <typename vt>
     void insert_impl(vt&& pair) {
         std::size_t index { probeForInsert(pair.first) };
-
-        if (m_buckets[index].state == State::OPEN) {
-            new (m_buckets[index].storage) value_type(std::forward<value_type>(pair));
-
-            std::cout << "Index given to placementNew in insert: " << index << '\n';
-            std::cout << "bucketSize in placementNew in insert: " << m_buckets.size() << '\n';
-            std::cout << "bucket capacity in placementNew in insert: " << m_buckets.capacity() << '\n';
-            std::cout << "size() gives: " << size() << '\n';
-            m_buckets[index].state = State::FILLED;
-            ++m_filled;
-        } else {
-            assert(false && "State was not open during insert, this statement should not have been reached in insert");
+        auto& bucket = m_buckets[index];
+        State state = bucket.state;
+        if (state != State::OPEN && state != State::TOMBSTONE) {
+            std::cerr << "state is: " << state;
+            assert(false && "State was not OPEN or TOMBSTONE during insert, this statement should not have been reached in insert");
+            return;
         }
+        // Placement-new
+        new (bucket.storage) value_type(std::forward<vt>(pair));
+
+        std::cout << "Index given to placementNew in insert: " << index << '\n';
+        std::cout << "bucketSize in placementNew in insert: " << m_buckets.size() << '\n';
+        std::cout << "bucket capacity in placementNew in insert: " << m_buckets.capacity() << '\n';
+        std::cout << "size() gives: " << size() << '\n';
+        bucket.state = State::FILLED;
+        ++m_filled;
     }
 
 public:
@@ -151,11 +176,11 @@ public:
     ///////////////
     // Modifiers //
     ///////////////
-    void insert(const K& first, const V& second) {
+    void insert(K first, V second) {
         insert_impl(value_type{std::move(first), std::move(second)});
     }
-
     // TODO: R value K and V?
+    // TODO: Emplace()
 
     void insert(const value_type& pair) {
         insert_impl(pair);
@@ -163,6 +188,12 @@ public:
 
     void insert(value_type&& pair) {
         insert_impl(std::move(pair));
+    }
+
+    template <typename... Args>
+    requires std::constructible_from<value_type, Args&&...>
+    void emplace(Args&&... args) {
+        insert_impl(std::forward<Args>(args)...);
     }
 
     V& find(const K& key) {
