@@ -4,22 +4,23 @@
 
 namespace systems_dsa {
 
-template <typename T>
-concept Hashable = requires(T a) {
-    { std::hash<T>(a) } -> std::convertible_to<std::size_t>;
-};
-
 template <typename H, typename K>
 concept ValidHasher =
     std::regular_invocable<H, const K&> &&
         std::convertible_to<std::invoke_result_t<H, const K&>, std::size_t>;
 
+template <typename Eq, typename K>
+concept ValidKeyEqual =
+    std::predicate<Eq, const K&, const K&>;
+
 template <
-    Hashable K,
+    typename K,
     typename V,
-    ValidHasher Hasher = std::hash<K>,
+    class Hasher = std::hash<K>,
     class KeyEqual = std::equal_to<K>
     >
+requires ValidHasher<Hasher, K> &&
+    ValidKeyEqual<KeyEqual, K>
 class hash_map {
     enum class State : uint8_t {
         OPEN,
@@ -84,19 +85,17 @@ class hash_map {
         bool forInsert = !key.has_value();
         const std::size_t bucketSize { m_buckets.size() };
         assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
-
+        std::cout << "bucketSize: " << bucketSize << '\n';
         bool failure = false;
-        for (
-            std::size_t iterations {};
-            iterations < bucketSize && m_buckets[index].state == State::OPEN;
-            ++iterations, index = (index + 1) % bucketSize
-            ) {
+        for (std::size_t iterations {}; iterations < bucketSize; ++iterations, index = (index + 1) % bucketSize) {
             assert(index < bucketSize && "Index in probe not less than bucketSize");
             auto& bucket = m_buckets[index];
             State state = bucket.state;
-            if (!forInsert && state == State::OPEN) {
-                // Did not find key
-                failure = true;
+            if (state == State::OPEN) {
+                // We stop probing on OPEN buckets in both use cases
+                // Either we didn't find the key we're looking for (failure == true)
+                // Or we found an OPEN bucket suitable for insertion
+                if (!forInsert) failure = true;
                 break;
             }
             if (
@@ -108,14 +107,21 @@ class hash_map {
                 break;
             }
 
-            if (forInsert &&state == State::TOMBSTONE) {
+            if (forInsert && state == State::TOMBSTONE) {
                 // Found bucket for inserting
                 break;
             }
+            std::cout << "iterations: " << iterations << '\n';
         } // When key.has_value(), returns a sentinel value if we find an OPEN bucket
         // if (!key.has_value()) {
         //     assert(false && "Unreachable code reached in probe.");
         // }
+        if (forInsert) {
+
+            assert((m_buckets[index].state == State::OPEN || m_buckets[index].state == State::TOMBSTONE)
+                && "In probe forInsert == true, state was not OPEN or TOMBSTONE");
+            assert(!failure);
+        }
         return failure ? sentinelIndex : index;
     }
 
@@ -133,7 +139,7 @@ class hash_map {
         auto& bucket = m_buckets[index];
         State state = bucket.state;
         if (state != State::OPEN && state != State::TOMBSTONE) {
-            std::cerr << "state is: " << state;
+            std::cerr << "state is: " << static_cast<int>(state) << '\n';
             assert(false && "State was not OPEN or TOMBSTONE during insert, this statement should not have been reached in insert");
             return;
         }
@@ -146,17 +152,24 @@ class hash_map {
         std::cout << "size() gives: " << size() << '\n';
         bucket.state = State::FILLED;
         ++m_filled;
+        std::cout << "Insert successful of: " << pair.first << '\n';
     }
 
 public:
     // Default constructor
     hash_map() {
         m_buckets.resize(10);
+        for (std::size_t i {}; i < 10; ++i) {
+            assert(m_buckets[i].state == State::OPEN && "Default initialized bucket(s) were not OPEN");
+        }
     };
 
     // Constructor with size
-    explicit hash_map(size_t n) {
+    explicit hash_map(std::size_t n) {
         m_buckets.resize(n);
+        for (std::size_t i {}; i < n; ++i) {
+            assert(m_buckets[i].state == State::OPEN && "Default initialized bucket(s) were not OPEN");
+        }
     }
 
     // Copy constructor
