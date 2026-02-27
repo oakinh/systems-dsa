@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <systems_dsa/hash_map.hpp>
+#include "utils/lifetime_tracker.hpp"
 
 // TEST(HashMapTest, DefaultConstructs) {
 //     systems_dsa::hash_map<std::string, int> hashMap {};
@@ -60,4 +61,24 @@ TEST(HashMapTest, ContainsReturnsCorrectBool) {
     for (const auto& num : nonKeyInts) {
         EXPECT_EQ(hashMap.contains(num), false);
     }
+}
+
+TEST(HashMapTest, EmptyReturnsCorrectBool) {
+    systems_dsa::hash_map<int, int> hashMap {};
+    EXPECT_EQ(hashMap.empty(), true);
+    hashMap.insert(10, 10);
+    EXPECT_EQ(hashMap.empty(), false);
+}
+
+TEST(HashMapTest, EraseDestroysElement) {
+    systems_dsa::hash_map<int, LifetimeTracker> hashMap {};
+    LifetimeTracker::resetCounts();
+    hashMap.insert(10, {});
+    hashMap.insert(11, {});
+    hashMap.insert(12, {});
+    const int oldDtorCount { LifetimeTracker::dtorCount };
+    hashMap.erase(10);
+    EXPECT_EQ(LifetimeTracker::dtorCount, oldDtorCount + 1);
+    EXPECT_FALSE(hashMap.contains(10));
+    LifetimeTracker::resetCounts();
 }
