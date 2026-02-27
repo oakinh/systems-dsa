@@ -162,6 +162,7 @@ public:
         for (std::size_t i {}; i < 10; ++i) {
             assert(m_buckets[i].state == State::OPEN && "Default initialized bucket(s) were not OPEN");
         }
+        assert(m_buckets.size() > 0 && "Default construction was not successful");
     };
 
     // Constructor with size
@@ -249,5 +250,17 @@ public:
         return m_buckets[index].val();
     }
 
+    bool empty() const {
+        return m_filled == 0;
+    }
+
+    std::size_t erase(const K& key) {
+        std::size_t index { probeForKey(key) };
+        if (index >= m_buckets.size()) return 0;
+        auto& bucket { m_buckets[index] };
+        bucket.ptr()->~value_type();
+        bucket.state = State::TOMBSTONE;
+        return 1;
+    }
 };
 }
