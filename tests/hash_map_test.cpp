@@ -77,8 +77,20 @@ TEST(HashMapTest, EraseDestroysElement) {
     hashMap.insert(11, {});
     hashMap.insert(12, {});
     const int oldDtorCount { LifetimeTracker::dtorCount };
-    hashMap.erase(10);
+    EXPECT_EQ(hashMap.erase(10), 1);
     EXPECT_EQ(LifetimeTracker::dtorCount, oldDtorCount + 1);
     EXPECT_FALSE(hashMap.contains(10));
     LifetimeTracker::resetCounts();
+}
+
+TEST(HashMapTest, EraseReturnsZeroOnNonExistentKey) {
+    systems_dsa::hash_map<int, LifetimeTracker> hashMap{};
+    LifetimeTracker::resetCounts();
+    hashMap.insert(10, {});
+    hashMap.insert(11, {});
+    hashMap.insert(12, {});
+    const int oldDtorCount { LifetimeTracker::dtorCount };
+    EXPECT_EQ(hashMap.erase(20), 0);
+    EXPECT_EQ(LifetimeTracker::dtorCount, oldDtorCount);
+    EXPECT_FALSE(hashMap.contains(20));
 }
