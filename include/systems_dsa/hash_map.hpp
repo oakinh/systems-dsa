@@ -61,7 +61,7 @@ class hash_map {
     //std::vector<Bucket> m_buckets {};
     vector<Bucket> m_buckets {};
     size_t m_tombstones {};
-    size_t m_filled { 0 }; // Filled count only
+    size_t m_filled {}; // Filled count only
     constexpr static float maxLoadFactor { 0.7f };
     Hasher m_hasher;
     KeyEqual m_eq;
@@ -150,6 +150,9 @@ class hash_map {
         std::cout << "bucketSize in placementNew in insert: " << m_buckets.size() << '\n';
         std::cout << "bucket capacity in placementNew in insert: " << m_buckets.capacity() << '\n';
         std::cout << "size() gives: " << size() << '\n';
+        if (state == State::TOMBSTONE) {
+            --m_tombstones;
+        }
         bucket.state = State::FILLED;
         ++m_filled;
         std::cout << "Insert successful of: " << pair.first << '\n';
@@ -162,6 +165,7 @@ class hash_map {
             if (bucket.state == State::FILLED) {
                 bucket.ptr()->~value_type();
                 bucket.state = State::TOMBSTONE;
+                ++m_tombstones;
                 erased = true;
             }
         }
@@ -274,6 +278,15 @@ public:
     // TODO: Add iterator support
     std::size_t erase(std::size_t index) {
         return eraseAtIndex(index);
+    }
+
+    void rehash(std::size_t count) {
+        vector<value_type> newBuckets { count };
+        for (const auto& oldBucket : m_buckets) {
+            if (oldBucket.state == State::FILLED) {
+
+            }
+        }
     }
 };
 }
