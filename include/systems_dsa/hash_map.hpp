@@ -155,6 +155,19 @@ class hash_map {
         std::cout << "Insert successful of: " << pair.first << '\n';
     }
 
+    std::size_t eraseAtIndex(std::size_t index) {
+        bool erased = false;
+        if (index < m_buckets.size()) {
+            auto& bucket { m_buckets[index] };
+            if (bucket.state == State::FILLED) {
+                bucket.ptr()->~value_type();
+                bucket.state = State::TOMBSTONE;
+                erased = true;
+            }
+        }
+        return erased ? 1 : 0;
+    }
+
 public:
     // Default constructor
     hash_map() {
@@ -255,12 +268,12 @@ public:
     }
 
     std::size_t erase(const K& key) {
-        std::size_t index { probeForKey(key) };
-        if (index >= m_buckets.size()) return 0;
-        auto& bucket { m_buckets[index] };
-        bucket.ptr()->~value_type();
-        bucket.state = State::TOMBSTONE;
-        return 1;
+        return eraseAtIndex(probeForKey(key));
+    }
+
+    // TODO: Add iterator support
+    std::size_t erase(std::size_t index) {
+        return eraseAtIndex(index);
     }
 };
 }
