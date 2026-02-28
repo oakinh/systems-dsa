@@ -76,10 +76,9 @@ struct Bucket {
 - The size of the array is always > 0 after initialization
 - Probing only and always finishes either on an open bucket or the found key. It also wraps around.
   - When probing, there is guaranteed to be at least one OPEN bucket to terminate on if it failed to find the key.
+  - Probing will never step > capacity
 - When State == FILLED, bucket holds live `value_type`
 - When State == OPEN or TOMBSTONE, there is no live object. (std::byte is uninitialized memory)
-- At the end of every operation, 
-- Probing will never step > capacity
 - OPEN count is always > 0
 - capacity = number of buckets (bucket array length)
 - open = capacity - size - tombstones
