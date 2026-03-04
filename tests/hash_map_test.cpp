@@ -33,7 +33,9 @@ TEST(HashMapTest, FindReturnsCorrectValue) {
     }
 
     for (const auto& pair : pairsToInsert) {
-        EXPECT_EQ(hashMap.find(pair.first), pair.second);
+        const auto& valPtr { hashMap.find(pair.first) };
+        if (valPtr == nullptr) FAIL() << "valPtr was a nullptr, first: " << pair.first;
+        EXPECT_EQ(*hashMap.find(pair.first), pair.second);
     }
 }
 
@@ -93,4 +95,24 @@ TEST(HashMapTest, EraseReturnsZeroOnNonExistentKey) {
     EXPECT_EQ(hashMap.erase(20), 0);
     EXPECT_EQ(LifetimeTracker::dtorCount, oldDtorCount);
     EXPECT_FALSE(hashMap.contains(20));
+}
+
+TEST(HashMapTest, RehashLosesNoElements) {
+    systems_dsa::hash_map<int, int> hashMap { 4 };
+    std::vector<std::pair<int, int>> pairsToInsert {
+                { 201, 101 },
+                { 203, 103 },
+                { 207, 107 },
+                { 210, 110 },
+                { 202, 102 },
+            };
+    for (const auto& p : pairsToInsert) {
+        hashMap.insert(p);
+    }
+
+    for (const auto& p : pairsToInsert) {
+        const auto* valPtr { hashMap.find(p.first) };
+        if (valPtr == nullptr) FAIL() << "valPtr was a null ptr, first: " << p.first;
+        EXPECT_EQ(*hashMap.find(p.first), p.second);
+    }
 }

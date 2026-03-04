@@ -13,11 +13,28 @@ template <typename Eq, typename K>
 concept ValidKeyEqual =
     std::predicate<Eq, const K&, const K&>;
 
+// Forward declaration
 template <
     typename K,
     typename V,
     class Hasher = std::hash<K>,
     class KeyEqual = std::equal_to<K>
+    >
+requires ValidHasher<Hasher, K> &&
+    ValidKeyEqual<KeyEqual, K>
+class hash_map;
+
+// Forward declaration
+template <class K, class V, class Hash, class KeyEq>
+std::ostream& operator<<(std::ostream& out,
+                         const hash_map<K, V, Hash, KeyEq>& hashMap);
+
+// Start of class
+template <
+    typename K,
+    typename V,
+    class Hasher,
+    class KeyEqual
     >
 requires ValidHasher<Hasher, K> &&
     ValidKeyEqual<KeyEqual, K>
@@ -68,28 +85,34 @@ class hash_map {
     constexpr static std::size_t sentinelIndex { std::numeric_limits<std::size_t>::max() };
 
     // Member functions
-    float getLoadFactor() const {
-        return m_tombstones + m_filled / m_buckets.size();
+    float getLoadFactor(const std::optional<std::size_t> additions = std::nullopt) const {
+        return (m_tombstones + m_filled + additions.value_or(0)) / m_buckets.size();
     }
 
-    std::size_t getKeyIndex(const K& key) const {
+    std::size_t getKeyIndex(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
+        const auto& buckets { bucketOverride ? *bucketOverride : m_buckets };
         std::size_t hashedKey { m_hasher(key) };
         return hashedKey > 0
-            ? hashedKey % m_buckets.size()
+            ? hashedKey % buckets.size()
             : 0;
     }
     // TODO: Write a template implementation function, that enables both const member func and non-const calling
-    std::size_t probe(std::size_t index, const std::optional<K> key = std::nullopt) const {
+    std::size_t probe(
+        std::size_t index,
+        const std::optional<K> key = std::nullopt,
+        const vector<Bucket>* bucketOverride = nullptr
+        ) const {
         // For finding a key, probing stops only on an OPEN bucket
         // Probing for insertion, probing stops on an OPEN or TOMBSTONE bucket
+        const auto& buckets { bucketOverride ? *bucketOverride : m_buckets};
         bool forInsert = !key.has_value();
-        const std::size_t bucketSize { m_buckets.size() };
+        const std::size_t bucketSize { buckets.size() };
         assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
         std::cout << "bucketSize: " << bucketSize << '\n';
         bool failure = false;
         for (std::size_t iterations {}; iterations < bucketSize; ++iterations, index = (index + 1) % bucketSize) {
             assert(index < bucketSize && "Index in probe not less than bucketSize");
-            auto& bucket = m_buckets[index];
+            auto& bucket = buckets[index];
             State state = bucket.state;
             if (state == State::OPEN) {
                 // We stop probing on OPEN buckets in both use cases
@@ -117,8 +140,7 @@ class hash_map {
         //     assert(false && "Unreachable code reached in probe.");
         // }
         if (forInsert) {
-
-            assert((m_buckets[index].state == State::OPEN || m_buckets[index].state == State::TOMBSTONE)
+            assert((buckets[index].state == State::OPEN || buckets[index].state == State::TOMBSTONE)
                 && "In probe forInsert == true, state was not OPEN or TOMBSTONE");
             assert(!failure);
         }
@@ -129,33 +151,46 @@ class hash_map {
         return probe(getKeyIndex(key), key);
     }
 
-    std::size_t probeForInsert(const K& key) const {
-        return probe(getKeyIndex(key));
+    std::size_t probeForInsert(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
+        return probe(getKeyIndex(key), std::nullopt, bucketOverride);
     }
 
     template <typename vt>
-    void insert_impl(vt&& pair) {
-        std::size_t index { probeForInsert(pair.first) };
-        auto& bucket = m_buckets[index];
+    Bucket* insert_impl(vt&& pair, vector<Bucket>* bucketOverride = nullptr) {
+        if (bucketOverride == nullptr && getLoadFactor(1) >= 0.70f) {
+            std::cout << "**REHASHING**\n";
+            rehash(m_buckets.size() * 2);
+
+        }
+        // Take the reference AFTER a potential rehash
+        vector<Bucket>& buckets { bucketOverride ? *bucketOverride : m_buckets };
+        std::size_t index { probeForInsert(pair.first, bucketOverride) };
+        auto& bucket = buckets[index];
         State state = bucket.state;
         if (state != State::OPEN && state != State::TOMBSTONE) {
             std::cerr << "state is: " << static_cast<int>(state) << '\n';
             assert(false && "State was not OPEN or TOMBSTONE during insert, this statement should not have been reached in insert");
-            return;
+            return nullptr;
         }
         // Placement-new
         new (bucket.storage) value_type(std::forward<vt>(pair));
 
         std::cout << "Index given to placementNew in insert: " << index << '\n';
-        std::cout << "bucketSize in placementNew in insert: " << m_buckets.size() << '\n';
-        std::cout << "bucket capacity in placementNew in insert: " << m_buckets.capacity() << '\n';
+        std::cout << "bucketSize in placementNew in insert: " << buckets.size() << '\n';
+        std::cout << "bucket capacity in placementNew in insert: " << buckets.capacity() << '\n';
         std::cout << "size() gives: " << size() << '\n';
         if (state == State::TOMBSTONE) {
             --m_tombstones;
         }
         bucket.state = State::FILLED;
-        ++m_filled;
-        std::cout << "Insert successful of: " << pair.first << '\n';
+        if (bucketOverride == nullptr) {
+            ++m_filled;
+            std::cout << "Insert successful of: " << pair.first << '\n';
+        } else {
+            std::cout << "REinsert successful of: " << pair.first << '\n';
+        }
+
+        return &bucket;
     }
 
     std::size_t eraseAtIndex(std::size_t index) {
@@ -227,13 +262,21 @@ public:
         insert_impl(std::forward<Args>(args)...);
     }
 
-    V& find(const K& key) {
+    V* find(const K& key) {
         std::size_t index { probeForKey(key) };
-        return m_buckets[index].val();
+        if (index >= m_buckets.size()) {
+            std::cout << "nullptr placeholder";
+            return nullptr;
+        }
+        return index < m_buckets.size() ? &m_buckets[index].val() : nullptr;
     }
-    const V& find(const K& key) const {
+    const V* find(const K& key) const {
         std::size_t index { probeForKey(key) };
-        return m_buckets[index].val();
+        if (index >= m_buckets.size()) {
+            std::cout << "nullptr placeholder";
+            return nullptr;
+        }
+        return index < m_buckets.size() ? &m_buckets[index].val() : nullptr;
     }
 
     bool contains(const K& key) const {
@@ -245,11 +288,20 @@ public:
     }
 
     V& operator[](const K& key) {
-        return find(key);
+        const V* valPtr { find(key) };
+        if (valPtr == nullptr) {
+            return *insert_impl({ {}, {} });
+        }
+        return *valPtr;
     }
-    const V& operator[](const K& key) const {
-        return find(key);
-    }
+    // insert_impl isn't const, cannot have a operator[] const member function
+    // const V& operator[](const K& key) const {
+    //     const V* valPtr { find(key) };
+    //     if (valPtr == nullptr) {
+    //         return *insert_impl({ {}, {} });
+    //     }
+    //     return *valPtr;
+    // }
 
     V& at(const K& key) {
         std::size_t index { find(key) };
@@ -281,12 +333,58 @@ public:
     }
 
     void rehash(std::size_t count) {
-        vector<value_type> newBuckets { count };
-        for (const auto& oldBucket : m_buckets) {
-            if (oldBucket.state == State::FILLED) {
-
+        vector<Bucket> newBuckets {};
+        newBuckets.resize(count);
+        try {
+            // for (const Bucket& oldBucket : m_buckets) {
+            //     if (oldBucket.state == State::FILLED) {
+            //         insert(std::move_if_noexcept(*oldBucket.ptr()), &newBuckets);
+            //     }
+            // }
+            std::cout << "**START REHASH**\n";
+            for (std::size_t i{}; i < m_buckets.size(); ++i) {
+                auto& oldBucket { m_buckets[i] };
+                if (oldBucket.state == State::FILLED) {
+                    insert_impl(std::move_if_noexcept(*oldBucket.ptr()), &newBuckets);
+                }
             }
+
+        } catch (...) {
+            //for (const Bucket& newBucket : newBuckets) {
+            for (std::size_t i {}; i< newBuckets.size(); ++i) {
+                newBuckets[i].ptr()->~value_type();
+            }
+            throw;
         }
+        m_tombstones = 0;
+        m_buckets = std::move(newBuckets);
+        std::cout << "**END REHASH**\n";
     }
+
+    void reserve(std::size_t count) {
+        float loadFactorMultiplier { 1.3f }; // This ensures that rehashing isn't necessary to hold `count` elements
+        rehash(std::ceil(count * loadFactorMultiplier) + 1);
+    }
+
+    template <class K2, class V2, class H2, class E2>
+    friend std::ostream& operator<< (std::ostream&, const hash_map<K2, V2, H2, E2>&);
 };
+template <class K, class V, class Hash, class KeyEq>
+std::ostream& operator<< (std::ostream& out,
+    const hash_map<K, V, Hash, KeyEq>& hashMap) {
+    out << "[";
+    for (std::size_t i {}; i < hashMap.m_buckets.size(); ++i) {
+        if (i) out << ", ";
+        out << i << ": ";
+        const auto& bucket { hashMap.m_buckets[i] };
+        if (bucket.state == hash_map<K, V, Hash, KeyEq>::State::FILLED) {
+            out << "{ " << bucket.key() << ", " << bucket.val() << " }";
+        } else {
+            out << "empty";
+        }
+        out << '\n';
+    }
+    out << "]";
+    return out;
+}
 }
