@@ -1,6 +1,7 @@
 #include <systems_dsa/vector.hpp>
 #include <iostream>
 #include <systems_dsa/hash_map.hpp>
+#include <vector>
 
 int main() {
 	std::cout << "Hello programmers!\n";
@@ -26,13 +27,19 @@ int main() {
     //     myVec[1] = 22;
     //     myVec.resize(10);
 
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::hash_map<int, int> hashMap { 4 };
+    std::vector<std::pair<int, int>> pairsToInsert {
+                    { 201, 101 },
+                    { 203, 103 },
+                    { 207, 107 },
+                    { 210, 110 },
+                    { 202, 102 },
+                };
+    for (const auto& p : pairsToInsert) {
+        hashMap.insert(p);
+    }
 
-    hashMap.insert(22, 33);
-    hashMap.insert({ 1, 67 });
-
-    hashMap.find(22);
-    hashMap.find(1);
+    std::cout << hashMap << '\n';
 
 	return 0;
 }

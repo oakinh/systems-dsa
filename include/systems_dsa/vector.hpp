@@ -105,24 +105,26 @@ namespace systems_dsa {
         vector& operator=(const vector& other) = delete;
 
         // Move constructor
-        vector(const vector&& vec) noexcept
+        vector(vector&& vec) noexcept
             : m_data { vec.m_data } {
             m_capacity = vec.capacity();
             m_size = vec.size();
             vec.m_data = nullptr;
+            vec.m_size = 0;
         }
 
         // Move assignment
-        vector& operator=(const vector&& vec) noexcept {
+        vector& operator=(vector&& vec) noexcept {
             if (&vec == this) {
                 return *this;
             }
 
-            delete m_data;
+            deallocate(m_data);
             m_data = vec.m_data;
             vec.m_data = nullptr;
             m_capacity = vec.capacity();
             m_size = vec.size();
+            vec.m_size = 0;
 
             return *this;
         }
