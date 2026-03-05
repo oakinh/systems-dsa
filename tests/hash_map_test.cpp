@@ -110,6 +110,8 @@ TEST(HashMapTest, RehashLosesNoElements) {
         hashMap.insert(p);
     }
 
+    std::cout << hashMap << '\n';
+
     for (const auto& p : pairsToInsert) {
         const auto* valPtr { hashMap.find(p.first) };
         if (valPtr == nullptr) FAIL() << "valPtr was a null ptr, first: " << p.first;

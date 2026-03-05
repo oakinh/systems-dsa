@@ -92,6 +92,7 @@ class hash_map {
     std::size_t getKeyIndex(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
         const auto& buckets { bucketOverride ? *bucketOverride : m_buckets };
         std::size_t hashedKey { m_hasher(key) };
+        std::cout << "hashedKey: " << hashedKey << " - buckets.size(): " << buckets.size() << '\n';
         return hashedKey > 0
             ? hashedKey % buckets.size()
             : 0;
@@ -104,6 +105,7 @@ class hash_map {
         ) const {
         // For finding a key, probing stops only on an OPEN bucket
         // Probing for insertion, probing stops on an OPEN or TOMBSTONE bucket
+        std::cout << "Index in probe: " << index << " - key in probe: " << key.value_or(0) << '\n';
         const auto& buckets { bucketOverride ? *bucketOverride : m_buckets};
         bool forInsert = !key.has_value();
         const std::size_t bucketSize { buckets.size() };
@@ -152,7 +154,7 @@ class hash_map {
     }
 
     std::size_t probeForInsert(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
-        return probe(getKeyIndex(key), std::nullopt, bucketOverride);
+        return probe(getKeyIndex(key, bucketOverride), std::nullopt, bucketOverride);
     }
 
     template <typename vt>
@@ -265,7 +267,7 @@ public:
     V* find(const K& key) {
         std::size_t index { probeForKey(key) };
         if (index >= m_buckets.size()) {
-            std::cout << "nullptr placeholder";
+            std::cout << "index: " << index << " - nullptr placeholder\n";
             return nullptr;
         }
         return index < m_buckets.size() ? &m_buckets[index].val() : nullptr;
@@ -273,7 +275,7 @@ public:
     const V* find(const K& key) const {
         std::size_t index { probeForKey(key) };
         if (index >= m_buckets.size()) {
-            std::cout << "nullptr placeholder";
+            std::cout << "index: " << index << " - nullptr placeholder\n";
             return nullptr;
         }
         return index < m_buckets.size() ? &m_buckets[index].val() : nullptr;
