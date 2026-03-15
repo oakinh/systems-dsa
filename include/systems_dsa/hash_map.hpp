@@ -195,7 +195,7 @@ class hash_map {
         return &bucket;
     }
 
-    std::size_t eraseAtIndex(std::size_t index) {
+    std::size_t eraseAtIndex(std::size_t index) noexcept {
         bool erased = false;
         if (index < m_buckets.size()) {
             auto& bucket { m_buckets[index] };
@@ -203,6 +203,7 @@ class hash_map {
                 bucket.ptr()->~value_type();
                 bucket.state = State::TOMBSTONE;
                 ++m_tombstones;
+                --m_filled;
                 erased = true;
             }
         }
@@ -217,7 +218,7 @@ public:
             assert(m_buckets[i].state == State::OPEN && "Default initialized bucket(s) were not OPEN");
         }
         assert(m_buckets.size() > 0 && "Default construction was not successful");
-    };
+    }
 
     // Constructor with size
     explicit hash_map(std::size_t n) {
@@ -366,6 +367,12 @@ public:
     void reserve(std::size_t count) {
         float loadFactorMultiplier { 1.3f }; // This ensures that rehashing isn't necessary to hold `count` elements
         rehash(std::ceil(count * loadFactorMultiplier) + 1);
+    }
+
+    void clear() noexcept {
+        for (std::size_t i {}; i < m_buckets.size(); ++i) {
+            eraseAtIndex(i);
+        }
     }
 
     template <class K2, class V2, class H2, class E2>
