@@ -98,3 +98,17 @@ TEST_F(HashMapTest_F, RehashLosesNoElements) {
         EXPECT_EQ(*hashMap.find(p.first), p.second);
     }
 }
+
+TEST_F(HashMapTest_F, ClearRemovesAllElements) {
+    hashMap.clear();
+    EXPECT_EQ(hashMap.size(), 0);
+    for (const auto& p : pairs) {
+        EXPECT_FALSE(hashMap.contains(p.first));
+    }
+}
+
+TEST_F(HashMapTest_F, ElementsIntactPostReserve) {
+    std::size_t hashMapSize { hashMap.size() };
+    hashMap.reserve(30);
+    EXPECT_EQ(hashMap.size(), hashMapSize);
+}
