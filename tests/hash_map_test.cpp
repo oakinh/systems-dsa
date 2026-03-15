@@ -2,60 +2,53 @@
 #include <systems_dsa/hash_map.hpp>
 #include "utils/lifetime_tracker.hpp"
 
-// TEST(HashMapTest, DefaultConstructs) {
-//     systems_dsa::hash_map<std::string, int> hashMap {};
-//     EXPECT_GT(hashMap.size(), 0);
-// }
+class HashMapTest_F : public testing::Test {
+protected:
+    systems_dsa::hash_map<int, std::size_t> hashMap {};
+    std::vector<std::pair<int, std::size_t>> pairs {
+                { 1, 101 },
+                { 3, 103 },
+                { 7, 107 },
+                { 10, 110 },
+                { 2, 102 },
+            };
+    HashMapTest_F() {
+        for (const auto& pair : pairs) {
+            hashMap.insert(pair);
+        }
+    }
+};
 
-// TEST(HashMapTest, SizeConstructs) {
-//     systems_dsa::hash_map<int, int> hashMap { 10 };
-//     EXPECT_EQ(hashMap.size(), 10);
-// }
+TEST(HashMapTest, IsEmptyInitially) {
+    systems_dsa::hash_map<std::string, int> hashMap {};
+    EXPECT_EQ(hashMap.size(), 0);
+}
+
+TEST(HashMapTest, SizeConstructs) {
+    systems_dsa::hash_map<int, int> hashMap { 10 };
+    EXPECT_NO_FATAL_FAILURE();
+}
 
 TEST(HashMapTest, InsertAcceptsEither1Or2Args) {
     systems_dsa::hash_map<int, int> hashMap {};
     hashMap.insert(10, 1001);
     hashMap.insert({23, 100});
+    EXPECT_EQ(hashMap.size(), 2) << "hashMap size should equal the number of pairs inserted";
     EXPECT_NO_FATAL_FAILURE();
 }
 
-TEST(HashMapTest, FindReturnsCorrectValue) {
-    systems_dsa::hash_map<int, std::size_t> hashMap {};
-    std::vector<std::pair<int, std::size_t>> pairsToInsert {
-        { 1, 101 },
-        { 3, 103 },
-        { 7, 107 },
-        { 10, 110 },
-        { 2, 102 },
-    };
-    for (const auto& pair : pairsToInsert) {
-        hashMap.insert(pair);
-    }
-
-    for (const auto& pair : pairsToInsert) {
+TEST_F(HashMapTest_F, FindReturnsCorrectValue) {
+    for (const auto& pair : pairs) {
         const auto& valPtr { hashMap.find(pair.first) };
         if (valPtr == nullptr) FAIL() << "valPtr was a nullptr, first: " << pair.first;
         EXPECT_EQ(*hashMap.find(pair.first), pair.second);
     }
 }
 
-TEST(HashMapTest, ContainsReturnsCorrectBool) {
-    systems_dsa::hash_map<int, int> hashMap { 10 };
-    std::vector<std::pair<int, int>> pairsToInsert {
-            { 1, 101 },
-            { 3, 103 },
-            { 7, 107 },
-            { 10, 110 },
-            { 2, 102 },
-        };
-    for (const auto& pair : pairsToInsert) {
-        hashMap.insert(pair);
-    }
+TEST_F(HashMapTest_F, ContainsReturnsCorrectBool) {
+    EXPECT_EQ(hashMap.size(), pairs.size());
 
-    EXPECT_EQ(hashMap.size(), pairsToInsert.size());
-
-    for (const auto& pair : pairsToInsert) {
-        std::cout << pair.first << '\n';
+    for (const auto& pair : pairs) {
         EXPECT_EQ(hashMap.contains(pair.first), true);
     }
 
@@ -82,6 +75,7 @@ TEST(HashMapTest, EraseDestroysElement) {
     EXPECT_EQ(hashMap.erase(10), 1);
     EXPECT_EQ(LifetimeTracker::dtorCount, oldDtorCount + 1);
     EXPECT_FALSE(hashMap.contains(10));
+    EXPECT_EQ(hashMap.size(), 2) << "hashMap size should be one less after erase";
     LifetimeTracker::resetCounts();
 }
 
@@ -97,22 +91,8 @@ TEST(HashMapTest, EraseReturnsZeroOnNonExistentKey) {
     EXPECT_FALSE(hashMap.contains(20));
 }
 
-TEST(HashMapTest, RehashLosesNoElements) {
-    systems_dsa::hash_map<int, int> hashMap { 4 };
-    std::vector<std::pair<int, int>> pairsToInsert {
-                { 201, 101 },
-                { 203, 103 },
-                { 207, 107 },
-                { 210, 110 },
-                { 202, 102 },
-            };
-    for (const auto& p : pairsToInsert) {
-        hashMap.insert(p);
-    }
-
-    std::cout << hashMap << '\n';
-
-    for (const auto& p : pairsToInsert) {
+TEST_F(HashMapTest_F, RehashLosesNoElements) {
+    for (const auto& p : pairs) {
         const auto* valPtr { hashMap.find(p.first) };
         if (valPtr == nullptr) FAIL() << "valPtr was a null ptr, first: " << p.first;
         EXPECT_EQ(*hashMap.find(p.first), p.second);
