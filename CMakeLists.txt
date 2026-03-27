@@ -100,7 +100,6 @@ if(SYSTEMS_DSA_BUILD_TESTS AND BUILD_TESTING)
 
     # IMPORTANT: explicit file list (no GLOB) so IDE + CMake stay deterministic.
     set(SYSTEMS_DSA_TEST_SOURCES
-            tests/hello_test.cpp
             tests/vector_test.cpp
             tests/hash_map_test.cpp
     )
