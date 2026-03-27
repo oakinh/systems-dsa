@@ -297,14 +297,6 @@ public:
         }
         return *valPtr;
     }
-    // insert_impl isn't const, cannot have a operator[] const member function
-    // const V& operator[](const K& key) const {
-    //     const V* valPtr { find(key) };
-    //     if (valPtr == nullptr) {
-    //         return *insert_impl({ {}, {} });
-    //     }
-    //     return *valPtr;
-    // }
 
     V& at(const K& key) {
         std::size_t index { find(key) };

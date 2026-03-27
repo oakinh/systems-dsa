@@ -8,7 +8,7 @@ namespace systems_dsa {
     template <typename T>
     class vector {
     private:
-        constexpr static std::size_t startingCapacity { 2 };
+        constexpr static std::size_t startingCapacity { 2 }; // TODO: Just make this a literal, to save space
         size_t m_capacity { startingCapacity }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
         size_t m_size {};
         T* m_data { nullptr };
