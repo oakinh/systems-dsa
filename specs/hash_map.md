@@ -80,8 +80,8 @@ struct Bucket {
 - When State == FILLED, bucket holds live `value_type`
 - When State == OPEN or TOMBSTONE, there is no live object. (std::byte is uninitialized memory)
 - OPEN count is always > 0
-- capacity = number of buckets (bucket array length)
-- open = capacity - size - tombstones
+- The container's capacity = number of buckets (bucket array length)
+- open = buckets.size() - m_filled - m_tombstones
 - Buckets are not relocated in-place during growth; rehash allocates a new bucket array and reinserts elements.
 ## Growth / rehash rules
 Load factor = number of elements ("FILLED" + "TOMBSTONE") / size of array
