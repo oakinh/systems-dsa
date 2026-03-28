@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <systems_dsa/hash_map.hpp>
+#include <random>
 #include "utils/lifetime_tracker.hpp"
 #include "utils/seed.hpp"
 
@@ -114,11 +115,35 @@ TEST_F(HashMapTest_F, ElementsIntactPostReserve) {
     EXPECT_EQ(hashMap.size(), hashMapSize);
 }
 
-TEST(HashMapTest, RandomSeqInsertEraseContains) {
+TEST(HashMapTest, RandomSeqInsertEraseContainsAgainstStd) {
     std::uint64_t seed { getSeed("HASHMAP_SEED") };
+    std::mt19937_64 rng(seed);
+    std::uniform_int_distribution<int> distKeyVal(1, 1000);
+    std::uniform_int_distribution<int> distOp(0, 2);
     enum class OP {
         INSERT,
         ERASE,
         CONTAINS,
     };
+
+    systems_dsa::hash_map<int, int> hashMap {};
+    std::unordered_map<int, int> reference {};
+
+    for (std::size_t i {}; i < 10'000; ++i) {
+        const int op { distOp(rng) };
+        const int key { distKeyVal(rng) };
+        const int val { distKeyVal(rng) };
+        switch (static_cast<OP>(op)) {
+        case OP::INSERT:
+            hashMap.insert(key, val);
+            reference[key] = val;
+            break;
+        case OP::ERASE:
+            hashMap.erase(key);
+            reference.erase(key);
+        case OP::CONTAINS:
+            EXPECT_EQ(hashMap.contains(key), reference.contains(key));
+            break;
+        }
+    }
 }
