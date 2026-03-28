@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <systems_dsa/hash_map.hpp>
 #include "utils/lifetime_tracker.hpp"
+#include "utils/seed.hpp"
 
 class HashMapTest_F : public testing::Test {
 protected:
@@ -111,4 +112,13 @@ TEST_F(HashMapTest_F, ElementsIntactPostReserve) {
     std::size_t hashMapSize { hashMap.size() };
     hashMap.reserve(30);
     EXPECT_EQ(hashMap.size(), hashMapSize);
+}
+
+TEST(HashMapTest, RandomSeqInsertEraseContains) {
+    std::uint64_t seed { getSeed("HASHMAP_SEED") };
+    enum class OP {
+        INSERT,
+        ERASE,
+        CONTAINS,
+    };
 }
