@@ -4,6 +4,12 @@
 
 namespace systems_dsa {
 
+#ifndef NDEBUG
+#define HM_ASSERT_VALID() assertValid()
+#else
+#define HM_ASSERT_VALID() ((void)0)
+#endif
+
 template <typename H, typename K>
 concept ValidHasher =
     std::regular_invocable<H, const K&> &&
@@ -77,12 +83,40 @@ class hash_map {
     // Data
     //std::vector<Bucket> m_buckets {};
     vector<Bucket> m_buckets {};
-    size_t m_tombstones {};
-    size_t m_filled {}; // Filled count only
+    std::size_t m_tombstones {};
+    std::size_t m_filled {}; // Filled count only
     constexpr static float maxLoadFactor { 0.7f };
     Hasher m_hasher;
     KeyEqual m_eq;
     constexpr static std::size_t sentinelIndex { std::numeric_limits<std::size_t>::max() };
+
+
+#ifndef NDEBUG
+    void assertValid() const {
+        std::size_t tombstones {};
+        std::size_t filled {};
+        std::size_t open {};
+        for (std::size_t i {}; i < m_buckets.size(); ++i) {
+            const auto& bucket { m_buckets[i] };
+            switch (bucket.state) {
+            case State::OPEN:
+                ++open;
+                break;
+            case State::FILLED:
+                ++filled;
+                break;
+            case State::TOMBSTONE:
+                ++tombstones;
+                break;
+            default:
+                assert(false && "Unreachable code reached in assert valid switch bucket.state default case");
+            }
+        }
+        assert(tombstones == m_tombstones && "Tombstone count has drifted");
+        assert(filled == m_filled && "Filled count has drifted");
+        assert(open == m_buckets.size() - m_filled + m_tombstones && "Open count has drifted");
+    }
+#endif
 
     // Member functions
     float getLoadFactor(const std::optional<std::size_t> additions = std::nullopt) const {
