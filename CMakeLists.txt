@@ -108,6 +108,7 @@ if(SYSTEMS_DSA_BUILD_TESTS AND BUILD_TESTING)
     set(SYSTEMS_DSA_TEST_HEADERS
             tests/utils/lifetime_tracker.hpp
             tests/utils/throws_on_copy.hpp
+            tests/utils/seed.hpp
 
     )
 
