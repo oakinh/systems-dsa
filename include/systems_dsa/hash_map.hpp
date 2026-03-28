@@ -90,40 +90,6 @@ class hash_map {
     KeyEqual m_eq;
     constexpr static std::size_t sentinelIndex { std::numeric_limits<std::size_t>::max() };
 
-
-#ifndef NDEBUG
-    void assertValid() const {
-        std::size_t tombstones {};
-        std::size_t filled {};
-        std::size_t open {};
-        for (std::size_t i {}; i < m_buckets.size(); ++i) {
-            const auto& bucket { m_buckets[i] };
-            switch (bucket.state) {
-            case State::OPEN:
-                ++open;
-                break;
-            case State::FILLED:
-                ++filled;
-                break;
-            case State::TOMBSTONE:
-                ++tombstones;
-                break;
-            default:
-                assert(false && "Unreachable code reached in assert valid switch statement - bucket.state default case");
-            }
-            V* valFound { this.find(bucket.key())};
-            assert(valFound && "nullptr returned when attempting to find valid key");
-            assert(*valFound == bucket.val() && "valFound did not equal the correct value");
-        }
-        assert(tombstones == m_tombstones && "Tombstone count has drifted");
-        assert(filled == m_filled && "Filled count has drifted");
-        assert(open == m_buckets.size() - m_filled - m_tombstones && "Open count has drifted");
-        assert(open > 0 && "Open count was not greater than zero");
-        assert(this.getLoadFactor() == (filled + tombstones) / m_buckets.size() && "Load factor calculation is incorrect");
-        assert(this.getLoadFactor() < maxLoadFactor && "Load factor has exceeded allowed maximum");
-    }
-#endif
-
     // Member functions
     float getLoadFactor(const std::optional<std::size_t> additions = std::nullopt) const {
         return (m_tombstones + m_filled + additions.value_or(0)) / m_buckets.size();
@@ -145,7 +111,7 @@ class hash_map {
         ) const {
         // For finding a key, probing stops only on an OPEN bucket
         // Probing for insertion, probing stops on an OPEN or TOMBSTONE bucket
-        std::cout << "Index in probe: " << index << " - key in probe: " << key.value_or(0) << '\n';
+        // std::cout << "Index in probe: " << index << " - key in probe: " << key.value_or(0) << '\n';
         const auto& buckets { bucketOverride ? *bucketOverride : m_buckets};
         bool forInsert = !key.has_value();
         const std::size_t bucketSize { buckets.size() };
@@ -232,6 +198,7 @@ class hash_map {
             std::cout << "REinsert successful of: " << pair.first << '\n';
         }
 
+        HM_ASSERT_VALID();
         return &bucket;
     }
 
@@ -247,6 +214,7 @@ class hash_map {
                 erased = true;
             }
         }
+        HM_ASSERT_VALID();
         return erased ? 1 : 0;
     }
 
@@ -258,6 +226,7 @@ public:
             assert(m_buckets[i].state == State::OPEN && "Default initialized bucket(s) were not OPEN");
         }
         assert(m_buckets.size() > 0 && "Default construction was not successful");
+        HM_ASSERT_VALID();
     }
 
     // Constructor with size
@@ -266,6 +235,7 @@ public:
         for (std::size_t i {}; i < n; ++i) {
             assert(m_buckets[i].state == State::OPEN && "Default initialized bucket(s) were not OPEN");
         }
+        HM_ASSERT_VALID();
     }
 
     // Copy constructor
@@ -394,6 +364,7 @@ public:
         m_tombstones = 0;
         m_buckets = std::move(newBuckets);
         std::cout << "**END REHASH**\n";
+        HM_ASSERT_VALID();
     }
 
     void reserve(std::size_t count) {
@@ -405,8 +376,47 @@ public:
         for (std::size_t i {}; i < m_buckets.size(); ++i) {
             eraseAtIndex(i);
         }
+        HM_ASSERT_VALID();
     }
 
+private:
+#ifndef NDEBUG
+    // This function checks numerous invariants of our hash_map, to assert that it is in a valid state.
+    // We do this regardless of runtime overhead, in debug builds only.
+    void assertValid() const {
+        std::size_t tombstones {};
+        std::size_t filled {};
+        std::size_t open {};
+        for (std::size_t i {}; i < m_buckets.size(); ++i) {
+            const auto& bucket { m_buckets[i] };
+            switch (bucket.state) {
+            case State::OPEN:
+                ++open;
+                break;
+            case State::FILLED:
+                ++filled;
+                break;
+            case State::TOMBSTONE:
+                ++tombstones;
+                break;
+            default:
+                assert(false && "Unreachable code reached in assert valid switch statement - bucket.state default case");
+            }
+            if (bucket.state == State::FILLED) {
+                const auto valFound { find(bucket.key()) };
+                assert(valFound && "nullptr returned when attempting to find valid key");
+                assert(valFound == &bucket.val() && "valFound did not equal the correct value");
+            }
+        }
+        assert(tombstones == m_tombstones && "Tombstone count has drifted");
+        assert(filled == m_filled && "Filled count has drifted");
+        assert(open == m_buckets.size() - m_filled - m_tombstones && "Open count has drifted");
+        assert(open > 0 && "Open count was not greater than zero");
+        assert(getLoadFactor() == (filled + tombstones) / m_buckets.size() && "Load factor calculation is incorrect");
+        assert(getLoadFactor() < maxLoadFactor && "Load factor has exceeded allowed maximum");
+    }
+#endif
+public:
     template <class K2, class V2, class H2, class E2>
     friend std::ostream& operator<< (std::ostream&, const hash_map<K2, V2, H2, E2>&);
 };
