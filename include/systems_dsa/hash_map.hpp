@@ -109,12 +109,18 @@ class hash_map {
                 ++tombstones;
                 break;
             default:
-                assert(false && "Unreachable code reached in assert valid switch bucket.state default case");
+                assert(false && "Unreachable code reached in assert valid switch statement - bucket.state default case");
             }
+            V* valFound { this.find(bucket.key())};
+            assert(valFound && "nullptr returned when attempting to find valid key");
+            assert(*valFound == bucket.val() && "valFound did not equal the correct value");
         }
         assert(tombstones == m_tombstones && "Tombstone count has drifted");
         assert(filled == m_filled && "Filled count has drifted");
-        assert(open == m_buckets.size() - m_filled + m_tombstones && "Open count has drifted");
+        assert(open == m_buckets.size() - m_filled - m_tombstones && "Open count has drifted");
+        assert(open > 0 && "Open count was not greater than zero");
+        assert(this.getLoadFactor() == (filled + tombstones) / m_buckets.size() && "Load factor calculation is incorrect");
+        assert(this.getLoadFactor() < maxLoadFactor && "Load factor has exceeded allowed maximum");
     }
 #endif
 
