@@ -1,8 +1,10 @@
-#include <gtest/gtest.h>
-#include <systems_dsa/hash_map.hpp>
-#include <random>
 #include "utils/lifetime_tracker.hpp"
 #include "utils/seed.hpp"
+#include "utils/throws_on_copy.hpp"
+
+#include <gtest/gtest.h>
+#include <random>
+#include <systems_dsa/hash_map.hpp>
 
 class HashMapTest_F : public testing::Test {
 protected:
@@ -121,7 +123,7 @@ TEST(HashMapTest, RandomSeqInsertEraseContainsAgainstStd) {
     std::mt19937_64 rng(seed);
     std::uniform_int_distribution<int> distKeyVal(1, 1000);
     std::uniform_int_distribution<int> distOp(0, 2);
-    enum class OP {
+    enum class OP: std::uint8_t {
         INSERT,
         ERASE,
         CONTAINS,
@@ -148,3 +150,26 @@ TEST(HashMapTest, RandomSeqInsertEraseContainsAgainstStd) {
         }
     }
 }
+
+TEST(HashMapTest, ContainerUnmodifiedAfterCopyException) {
+    systems_dsa::hash_map<std::size_t, ThrowsOnCopy> hashMap { 10 };
+    ThrowsOnCopy::resetCounts();
+    ThrowsOnCopy::throwOnInstance = 9;
+
+    for (std::size_t i {}; i < 4; ++i) {
+        EXPECT_NO_THROW(hashMap.insert(i, ThrowsOnCopy{})) << "insert threw for i=" << i;
+    }
+
+    EXPECT_ANY_THROW(hashMap.reserve(15));
+
+    for (std::size_t i {}; i < 4; ++i) {
+        EXPECT_NO_THROW({
+            auto* p = hashMap.find(i);
+            EXPECT_NE(p, nullptr) << "find failed for key i=" << i;
+        }) << "find threw for key i=" << i;
+
+    }
+    ThrowsOnCopy::resetCounts();
+}
+
+// TODO: Fix emplace, write a test
