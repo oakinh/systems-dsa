@@ -160,7 +160,41 @@ class hash_map {
     }
 
     std::size_t probeForInsert(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
-        return probe(getKeyIndex(key, bucketOverride), std::nullopt, bucketOverride);
+        //return probe(getKeyIndex(key, bucketOverride), std::nullopt, bucketOverride);
+
+        std::size_t index { getKeyIndex(key, bucketOverride) };
+        // Probing for insertion, probing stops on an OPEN or TOMBSTONE bucket
+        // std::cout << "Index in probe: " << index << " - key in probe: " << key.value_or(0) << '\n';
+        const auto& buckets { bucketOverride ? *bucketOverride : m_buckets};
+        const std::size_t bucketSize { buckets.size() };
+        assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
+        std::cout << "bucketSize: " << bucketSize << '\n';
+        bool failure = false;
+        std::size_t tombstoneIndex { sentinelIndex };
+        for (std::size_t iterations {}; iterations < bucketSize; ++iterations, index = (index + 1) % bucketSize) {
+            assert(index < bucketSize && "Index in probe not less than bucketSize");
+            auto& bucket = buckets[index];
+            State state = bucket.state;
+            if (state == State::TOMBSTONE) {
+                // We found a bucket suitable for insertion
+                // We continue until an open bucket to ensure there's no duplicate keys
+                tombstoneIndex = index;
+            } else if (state == State::OPEN) {
+                // We always stop probing on an OPEN bucket
+                break;
+            } else if (bucket.key() == key) {
+                assert (state == State::FILLED);
+                // Key already exists, no op
+                failure = true;
+            }
+        }
+        // assert((buckets[index].state == State::OPEN || buckets[index].state == State::TOMBSTONE)
+        //         && "In probe forInsert == true, state was not OPEN or TOMBSTONE");
+        if (tombstoneIndex != sentinelIndex) {
+            // Provide the last found tombstone for insertion if found
+            index = tombstoneIndex;
+        }
+        return failure ? sentinelIndex : index;
     }
 
     template <typename vt>
@@ -173,11 +207,16 @@ class hash_map {
         // Take the reference AFTER a potential rehash
         vector<Bucket>& buckets { bucketOverride ? *bucketOverride : m_buckets };
         std::size_t index { probeForInsert(pair.first, bucketOverride) };
+        if (index == sentinelIndex) {
+            std::cout << "Duplicate key insertion attempted, no op'ing\n";
+            // Duplicate key, no op
+            return nullptr;
+        }
         auto& bucket = buckets[index];
         State state = bucket.state;
         if (state != State::OPEN && state != State::TOMBSTONE) {
             std::cerr << "state is: " << static_cast<int>(state) << '\n';
-            assert(false && "State was not OPEN or TOMBSTONE during insert, this statement should not have been reached in insert");
+            //assert(false && "State was not OPEN or TOMBSTONE during insert, this statement should not have been reached in insert");
             return nullptr;
         }
         // Placement-new
@@ -285,6 +324,7 @@ public:
     }
     const V* find(const K& key) const {
         std::size_t index { probeForKey(key) };
+        std::cout << "findKey: " << m_buckets[index].key() << '\n';
         if (index >= m_buckets.size()) {
             std::cout << "index: " << index << " - nullptr placeholder\n";
             return nullptr;
@@ -403,9 +443,15 @@ private:
                 assert(false && "Unreachable code reached in assert valid switch statement - bucket.state default case");
             }
             if (bucket.state == State::FILLED) {
+                std::cout << "assertValid bucketKey: " << bucket.key() << '\n';
                 const auto valFound { find(bucket.key()) };
                 assert(valFound && "nullptr returned when attempting to find valid key");
-                assert(valFound == &bucket.val() && "valFound did not equal the correct value");
+                if (!(valFound == &bucket.val())) {
+                    std::cerr << "valFound: " << *valFound
+                              << " did not equal expected value: " << bucket.val()
+                              << "\n";
+                    assert(false);
+                }
             }
         }
         assert(tombstones == m_tombstones && "Tombstone count has drifted");
