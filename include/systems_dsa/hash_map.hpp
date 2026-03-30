@@ -103,17 +103,10 @@ class hash_map {
             ? hashedKey % buckets.size()
             : 0;
     }
-    // TODO: Write a template implementation function, that enables both const member func and non-const calling
-    std::size_t probe(
-        std::size_t index,
-        const std::optional<K> key = std::nullopt,
-        const vector<Bucket>* bucketOverride = nullptr
-        ) const {
-        // For finding a key, probing stops only on an OPEN bucket
-        // Probing for insertion, probing stops on an OPEN or TOMBSTONE bucket
-        // std::cout << "Index in probe: " << index << " - key in probe: " << key.value_or(0) << '\n';
-        const auto& buckets { bucketOverride ? *bucketOverride : m_buckets};
-        bool forInsert = !key.has_value();
+
+    std::size_t probeForKey(const K& key) const {
+        std::size_t index { getKeyIndex(key) };
+        const auto& buckets { m_buckets};
         const std::size_t bucketSize { buckets.size() };
         assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
         std::cout << "bucketSize: " << bucketSize << '\n';
@@ -123,45 +116,18 @@ class hash_map {
             auto& bucket = buckets[index];
             State state = bucket.state;
             if (state == State::OPEN) {
-                // We stop probing on OPEN buckets in both use cases
-                // Either we didn't find the key we're looking for (failure == true)
-                // Or we found an OPEN bucket suitable for insertion
-                if (!forInsert) failure = true;
+                // We stop probing on OPEN buckets
+                failure = true;
                 break;
-            }
-            if (
-                !forInsert
-                && state == State::FILLED
-                && bucket.key() == key.value()
-                ) {
+            } else if (state == State::FILLED && bucket.key() == key) {
                 // Found key
                 break;
             }
-
-            if (forInsert && state == State::TOMBSTONE) {
-                // Found bucket for inserting
-                break;
-            }
-            std::cout << "iterations: " << iterations << '\n';
-        } // When key.has_value(), returns a sentinel value if we find an OPEN bucket
-        // if (!key.has_value()) {
-        //     assert(false && "Unreachable code reached in probe.");
-        // }
-        if (forInsert) {
-            assert((buckets[index].state == State::OPEN || buckets[index].state == State::TOMBSTONE)
-                && "In probe forInsert == true, state was not OPEN or TOMBSTONE");
-            assert(!failure);
         }
         return failure ? sentinelIndex : index;
     }
 
-    std::size_t probeForKey(const K& key) const {
-        return probe(getKeyIndex(key), key);
-    }
-
     std::size_t probeForInsert(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
-        //return probe(getKeyIndex(key, bucketOverride), std::nullopt, bucketOverride);
-
         std::size_t index { getKeyIndex(key, bucketOverride) };
         // Probing for insertion, probing stops on an OPEN or TOMBSTONE bucket
         // std::cout << "Index in probe: " << index << " - key in probe: " << key.value_or(0) << '\n';
