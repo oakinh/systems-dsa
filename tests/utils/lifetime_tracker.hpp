@@ -1,4 +1,6 @@
 #pragma once
+#include <cassert>
+#include <ostream>
 
 class LifetimeTracker {
     bool m_alive = false;
@@ -32,6 +34,7 @@ public:
         ++dtorCount;
         --liveCount;
         m_alive = false;
+        if (liveCount == 0) resetCounts();
     }
 
     LifetimeTracker(const LifetimeTracker& other)

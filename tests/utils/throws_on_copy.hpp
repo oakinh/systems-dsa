@@ -8,7 +8,9 @@ class ThrowsOnCopy {
     inline static int copyCtorCount = 0;
     inline static int dtorCount = 0;
 
-    ThrowsOnCopy() = default;
+    ThrowsOnCopy() {
+        ++instanceCount;
+    };
 
     explicit ThrowsOnCopy(int id)
         : id { id } {
@@ -19,9 +21,14 @@ class ThrowsOnCopy {
         if (throwOnInstance != 0 && (copyCtorCount == throwOnInstance)) {
             throw std::exception();
         }
+        ++instanceCount;
         ++copyCtorCount;
     }
-    ~ThrowsOnCopy() { ++dtorCount; }
+    ~ThrowsOnCopy() {
+        ++dtorCount;
+        --instanceCount;
+        if (instanceCount == 0) resetCounts();
+    }
 
     ThrowsOnCopy(ThrowsOnCopy&& other) = delete;
     ThrowsOnCopy& operator=(ThrowsOnCopy&& other) = delete;

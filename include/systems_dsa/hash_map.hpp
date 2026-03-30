@@ -2,6 +2,7 @@
 #include <systems_dsa/vector.hpp>
 #include <concepts>
 
+
 namespace systems_dsa {
 
 #ifndef NDEBUG
@@ -260,9 +261,16 @@ public:
     ///////////////
     // Modifiers //
     ///////////////
-    void insert(K first, V second) {
-        insert_impl(value_type{std::move(first), std::move(second)});
+
+    void insert(K&& first, V&& second) {
+        insert_impl(value_type{ std::move(first), std::move(second) });
     }
+
+    void insert(const K& first, const V& second) {
+        insert_impl(value_type{ first, second });
+    }
+
+
     // TODO: R value K and V?
     // TODO: Emplace()
 
@@ -359,7 +367,6 @@ public:
                     insert_impl(std::move_if_noexcept(*oldBucket.ptr()), &newBuckets);
                 }
             }
-
         } catch (...) {
             //for (const Bucket& newBucket : newBuckets) {
             for (std::size_t i {}; i< newBuckets.size(); ++i) {
@@ -409,13 +416,13 @@ private:
                 assert(false && "Unreachable code reached in assert valid switch statement - bucket.state default case");
             }
             if (bucket.state == State::FILLED) {
-                std::cout << "assertValid bucketKey: " << bucket.key() << '\n';
+                //std::cout << "assertValid bucketKey: " << bucket.key() << '\n';
                 const auto valFound { find(bucket.key()) };
                 assert(valFound && "nullptr returned when attempting to find valid key");
                 if (!(valFound == &bucket.val())) {
-                    std::cerr << "valFound: " << *valFound
-                              << " did not equal expected value: " << bucket.val()
-                              << "\n";
+                    // std::cerr << "valFound: " << *valFound
+                    //           << " did not equal expected value: " << bucket.val()
+                    //           << "\n";
                     assert(false);
                 }
             }
