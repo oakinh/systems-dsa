@@ -273,10 +273,6 @@ public:
         insert_impl(value_type{ first, second });
     }
 
-
-    // TODO: R value K and V?
-    // TODO: Emplace()
-
     void insert(const value_type& pair) {
         insert_impl(pair);
     }
@@ -292,7 +288,15 @@ public:
     //     insert_impl(std::forward<Args>(args)...);
     // }
 
-    //void emplace();
+    template <typename KArg, typename VArg>
+    requires std::constructible_from<K, KArg&&> &&
+        std::constructible_from<V, VArg&&>
+    void emplace(KArg&& key, VArg&& value) {
+        insert_impl(value_type(
+            std::forward<KArg>(key),
+            std::forward<VArg>(value)
+            ));
+    }
 
     V* find(const K& key) {
         std::size_t index { probeForKey(key) };
