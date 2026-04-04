@@ -166,6 +166,7 @@ class hash_map {
 
     template <typename vt>
     Bucket* insert_impl(vt&& pair, vector<Bucket>* bucketOverride = nullptr) {
+        // Rehash if necessary
         if (bucketOverride == nullptr && getLoadFactor(1) >= 0.70f) {
             std::cout << "**REHASHING**\n";
             rehash(m_buckets.size() * 2);
@@ -282,11 +283,14 @@ public:
         insert_impl(std::move(pair));
     }
 
-    template <typename... Args>
-    requires std::constructible_from<value_type, Args&&...>
-    void emplace(Args&&... args) {
-        insert_impl(std::forward<Args>(args)...);
-    }
+    // TODO: Implement piecewise-style emplacement
+    // template <typename... Args>
+    // requires std::constructible_from<value_type, Args&&...>
+    // void emplace(Args&&... args) {
+    //     insert_impl(std::forward<Args>(args)...);
+    // }
+
+    //void emplace();
 
     V* find(const K& key) {
         std::size_t index { probeForKey(key) };
@@ -434,7 +438,7 @@ private:
         assert(getLoadFactor() == (filled + tombstones) / m_buckets.size() && "Load factor calculation is incorrect");
         assert(getLoadFactor() < maxLoadFactor && "Load factor has exceeded allowed maximum");
     }
-#endif
+
 public:
     template <class K2, class V2, class H2, class E2>
     friend std::ostream& operator<< (std::ostream&, const hash_map<K2, V2, H2, E2>&);
@@ -457,4 +461,5 @@ std::ostream& operator<< (std::ostream& out,
     out << "]";
     return out;
 }
+#endif
 }

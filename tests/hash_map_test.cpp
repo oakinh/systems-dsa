@@ -151,7 +151,7 @@ TEST(HashMapTest, RandomSeqInsertEraseContainsAgainstStd) {
     }
 }
 
-TEST(HashMapTest, ContainerUnmodifiedAfterCopyException) {
+TEST(HashMapTest, ContainerUnmodifiedAfterReserveException) {
     systems_dsa::hash_map<std::size_t, ThrowsOnCopy> hashMap { 10 };
     ThrowsOnCopy::resetCounts();
     ThrowsOnCopy::throwOnInstance = 9;
@@ -160,6 +160,7 @@ TEST(HashMapTest, ContainerUnmodifiedAfterCopyException) {
         EXPECT_NO_THROW(hashMap.insert(i, ThrowsOnCopy{})) << "insert threw for i=" << i;
     }
 
+    // Throws on reserve
     EXPECT_ANY_THROW(hashMap.reserve(15));
 
     for (std::size_t i {}; i < 4; ++i) {
@@ -167,9 +168,31 @@ TEST(HashMapTest, ContainerUnmodifiedAfterCopyException) {
             auto* p = hashMap.find(i);
             EXPECT_NE(p, nullptr) << "find failed for key i=" << i;
         }) << "find threw for key i=" << i;
-
     }
     ThrowsOnCopy::resetCounts();
+}
+
+TEST(HashMapTest, ContainerUnmodifiedAfterInsertException) {
+    systems_dsa::hash_map<std::size_t, ThrowsOnCopy> hashMap { 10 };
+    ThrowsOnCopy::resetCounts();
+    ThrowsOnCopy::throwOnInstance = 7;
+
+    for (std::size_t i {}; i < 3; ++i) {
+        EXPECT_NO_THROW(hashMap.insert(i, ThrowsOnCopy{}));
+    }
+    std::cout << "copyCtorCount" << ThrowsOnCopy::copyCtorCount << '\n';
+
+    // Throws on insert
+    EXPECT_ANY_THROW(hashMap.insert(3, ThrowsOnCopy{}));
+
+    for (std::size_t i {}; i < 3; ++i) {
+        EXPECT_NO_THROW({
+            auto* p = hashMap.find(i);
+            EXPECT_NE(p, nullptr) << "find failed for key i=" << i;
+        }) << "find threw for key i=" << i;
+    }
+    ThrowsOnCopy::resetCounts();
+
 }
 
 // TODO: Fix emplace, write a test
