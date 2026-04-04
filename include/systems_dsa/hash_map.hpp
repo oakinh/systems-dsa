@@ -98,7 +98,7 @@ class hash_map {
     std::size_t getKeyIndex(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
         const auto& buckets { bucketOverride ? *bucketOverride : m_buckets };
         std::size_t hashedKey { m_hasher(key) };
-        std::cout << "hashedKey: " << hashedKey << " - buckets.size(): " << buckets.size() << '\n';
+        // std::cout << "hashedKey: " << hashedKey << " - buckets.size(): " << buckets.size() << '\n';
         return hashedKey > 0
             ? hashedKey % buckets.size()
             : 0;
@@ -109,7 +109,7 @@ class hash_map {
         const auto& buckets { m_buckets};
         const std::size_t bucketSize { buckets.size() };
         assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
-        std::cout << "bucketSize: " << bucketSize << '\n';
+        // std::cout << "bucketSize: " << bucketSize << '\n';
         bool failure = false;
         for (std::size_t iterations {}; iterations < bucketSize; ++iterations, index = (index + 1) % bucketSize) {
             assert(index < bucketSize && "Index in probe not less than bucketSize");
@@ -134,7 +134,7 @@ class hash_map {
         const auto& buckets { bucketOverride ? *bucketOverride : m_buckets};
         const std::size_t bucketSize { buckets.size() };
         assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
-        std::cout << "bucketSize: " << bucketSize << '\n';
+        // std::cout << "bucketSize: " << bucketSize << '\n';
         bool failure = false;
         std::size_t tombstoneIndex { sentinelIndex };
         for (std::size_t iterations {}; iterations < bucketSize; ++iterations, index = (index + 1) % bucketSize) {
@@ -210,13 +210,14 @@ class hash_map {
         return &bucket;
     }
 
-    std::size_t eraseAtIndex(std::size_t index) noexcept {
+    std::size_t eraseAtIndex(std::size_t index, const std::optional<bool> clear = std::nullopt) noexcept {
         bool erased = false;
         if (index < m_buckets.size()) {
             auto& bucket { m_buckets[index] };
             if (bucket.state == State::FILLED) {
                 bucket.ptr()->~value_type();
-                bucket.state = State::TOMBSTONE;
+                // If we're clearing all elements, we set the state to OPEN
+                bucket.state = clear.value_or(false) ? State::OPEN : State::TOMBSTONE;
                 ++m_tombstones;
                 --m_filled;
                 erased = true;
@@ -307,7 +308,7 @@ public:
     }
     const V* find(const K& key) const {
         std::size_t index { probeForKey(key) };
-        std::cout << "findKey: " << m_buckets[index].key() << '\n';
+        // std::cout << "findKey: " << m_buckets[index].key() << '\n';
         if (index >= m_buckets.size()) {
             std::cout << "index: " << index << " - nullptr placeholder\n";
             return nullptr;
@@ -394,7 +395,7 @@ public:
 
     void clear() {
         for (std::size_t i {}; i < m_buckets.size(); ++i) {
-            eraseAtIndex(i);
+            eraseAtIndex(i, true);
         }
         HM_ASSERT_VALID();
     }
