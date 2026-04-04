@@ -2,28 +2,6 @@
 ## Goal
 An unordered data structure that provides O(1) random access by keys, and can be iterated over.
 It should amortize the overhead cost of hashing. This will be somewhat of a clone of std::unordered_map in its final form.
-
-## Supported operations
-### Capacity
-- empty
-- size
-### Modifiers
-- clear
-- insert
-- emplace
-- erase
-- swap
-### Lookup
-- at
-- operator[]
-- find
-- contains
-### Bucket interface
-- begin, cbegin
-- end, cend
-
-### Hash policy
-- reserve
         
 ## Complexity targets
 ### Modifiers
@@ -31,6 +9,16 @@ It should amortize the overhead cost of hashing. This will be somewhat of a clon
 ### Lookup Operations
 - Best-case + "reasonable": O(1)
 - Worst-case: O(n)
+
+## Terminology
+- **bucket count:** The number of elements, regardless of `STATE`, in the underlying array.
+- **size:** The number of `FILLED` elements
+- **filled:** An element that has `STATE::FILLED`, and is always constructed
+- **tombstone:** An element that has `STATE::TOMBSTONE`, and is not constructed. Marks an erased element that was previously filled. Available for insertion.
+- **open:** An element that has `STATE::OPEN`, and is not constructed. It has never held a constructed object, and is available for insertion.
+- **load factor:** The count of non-open elements ("FILLED" + "TOMBSTONE") / size of array. Used to determine when rehash and re-allocation is necessary to accommodate more elements.
+- **rehash:** Allocates a new array, then rehashes and inserts all filled elements (discards tombstones).
+- **capacity:** The number of elements in the underlying array, regardless of `STATE`.
 
 ## Memory layout
 Contiguous array of "buckets". We use open-addressing, so one element per bucket.
@@ -83,6 +71,71 @@ struct Bucket {
 - The container's capacity = number of buckets (bucket array length)
 - open = buckets.size() - m_filled - m_tombstones
 - Buckets are not relocated in-place during growth; rehash allocates a new bucket array and reinserts elements.
+## Supported operations
+### Capacity
+#### empty
+- Return value: A bool. `true` if the container has no FILLED elements, `false` otherwise
+- Effects: None
+- Complexity: O(1)
+- Exceptions / guarantee: Non-throwing
+#### size
+- Return value: std::size_t indicated the count of FILLED elements
+- Effects: None
+- Complexity: O(1)
+- Exceptions / guarantee: Non-throwing
+### Modifiers
+#### clear
+- Return value: void
+- Effects: All filled elements are destructed
+- Complexity: O(n)
+- Exceptions / guarantee: Non-throwing
+- Notes: This does not decrease the capacity of the container
+#### insert
+- Return value: void
+- Effects: Inserts an element into the underlying array, using hashing protocol and linear probing to determine placement. Fails on an exception. Calls rehash() if load factor exceeds the threshold.
+- Complexity: O(1) amortized best case, O(n) worst case
+- Exceptions / guarantee: Strong if type is copyable or nothrow movable, otherwise basic only
+- Notes: No-ops if the key provided is already in the hash_map
+#### emplace
+- Return value: void
+- Effects: Inserts an element into the underlying array, using hashing protocol and linear probing to determine placement. Fails on an exception. Calls rehash() if load factor exceeds the threshold.
+- Complexity: O(1) amortized best case, O(n) worst case
+- Exceptions / guarantee: Strong if type is copyable or nothrow movable, otherwise basic only
+- Notes: Currently doesn't do real piecewise emplacement. No-ops if the key provided is already in the hash_map
+#### erase
+- Return value: std::size_t indicating the number of erased elements
+- Effects: Erases the element based on the key or index passed to it. No other side effects.
+- Complexity: O(1) amortized best case, O(n) worst case
+- Exceptions / guarantee: Strong exception safety guarantee
+#### swap
+- Not currently supported
+### Lookup
+#### at
+- Return value: An l-value reference to the value associated with the provided key
+- Effects: Performs runtime bounds checking, no other side effects.
+- Complexity: O(1) amortized best case, O(n) worst case
+- Exceptions / guarantee: Throws `std::out_of_range` if provided key isn't found
+#### operator[]
+- Return value: An l-value reference to the value associated with the provided key
+- Effects: If the key provided isn't found, it default constructs a pair into the container.
+- Complexity: O(1) amortized best case, O(n) worst case
+- Exceptions / guarantee: Strong if type is copyable or nothrow movable, otherwise basic only
+#### find
+- Return value: A pointer to the value associated with the provided key, nullptr if the key wasn't found
+- Effects: No side effects
+- Complexity: O(1) amortized best case, O(n) worst case
+- Exceptions / guarantee: Strong exception safety guarantee
+#### contains
+- Return value: A bool, `true` if the provided key is found within the underlying array, false otherwise
+- Effects: No side effects
+- Complexity: O(1) amortized best case, O(n) worst case
+- Exceptions / guarantee: Strong exception safety guarantee
+### Hash policy
+#### reserve
+- Return value: void
+- Effects: Rehashes the container, increasing the bucket count such that `count` elements can be held in the hash_map **without** having to rehash again.
+- Complexity: O(n)
+- Exceptions / guarantee: If the type is copyable or no-throw movable, strong guarantee, otherwise basic only.
 ## Growth / rehash rules
 Load factor = number of elements ("FILLED" + "TOMBSTONE") / size of array
 - We double the size of the array, when load factor reaches 70%
@@ -101,9 +154,7 @@ Load factor = number of elements ("FILLED" + "TOMBSTONE") / size of array
 - On erase, that iterator is definitely invalid, and all other iterators are guaranteed to be valid
   - Erase does not rehash
 - After a rehash, iterators are invalidated
-## Error / exception behavior
-- Rehash:
-  - If type is copyable or no throw movable: strong exception guarantee by build-new-then-swap.
-  - Otherwise basic guarantee only
-
-## Non-goals (explicitly state what you are NOT supporting)
+## Non-goals
+- Perfect parity with std::unordered_map
+- Thread-safe usage
+- Custom allocator support

@@ -82,7 +82,6 @@ class hash_map {
         }
     };
     // Data
-    //std::vector<Bucket> m_buckets {};
     vector<Bucket> m_buckets {};
     std::size_t m_tombstones {};
     std::size_t m_filled {}; // Filled count only
@@ -320,7 +319,7 @@ public:
         return probeForKey(key) < m_buckets.size();
     }
 
-    std::size_t size() const {
+    std::size_t size() const noexcept {
         return m_filled;
     }
 
@@ -348,7 +347,7 @@ public:
         return m_buckets[index].val();
     }
 
-    bool empty() const {
+    bool empty() const noexcept {
         return m_filled == 0;
     }
 
@@ -357,7 +356,7 @@ public:
     }
 
     // TODO: Add iterator support
-    std::size_t erase(std::size_t index) {
+    std::size_t erase(std::size_t index) noexcept {
         return eraseAtIndex(index);
     }
 
@@ -393,7 +392,7 @@ public:
         rehash(std::ceil(count * loadFactorMultiplier) + 1);
     }
 
-    void clear() noexcept {
+    void clear() {
         for (std::size_t i {}; i < m_buckets.size(); ++i) {
             eraseAtIndex(i);
         }
