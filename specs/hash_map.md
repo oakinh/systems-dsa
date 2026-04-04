@@ -33,7 +33,7 @@ It should amortize the overhead cost of hashing. This will be somewhat of a clon
 - Worst-case: O(n)
 
 ## Memory layout
-Contiguous array of "buckets". We'll use open-addressing for the first pass, so one element per bucket.
+Contiguous array of "buckets". We use open-addressing, so one element per bucket.
 This is done to achieve better cache locality, and avoid dependent memory accesses with pointer chasing.
 We're using open addressing with linear probing.
 - Each bucket holds one element
@@ -86,7 +86,7 @@ struct Bucket {
 ## Growth / rehash rules
 Load factor = number of elements ("FILLED" + "TOMBSTONE") / size of array
 - We double the size of the array, when load factor reaches 70%
-- This requires rehashing all the elements
+  - This requires rehashing all the elements
 - Rehashing converts `TOMBSTONE` buckets to `OPEN`
 - Calling reserve(1000) guarantees the hashmap can hold 1000 elements without rehashing
   - This is done by allocating at least 30% more buckets than the input capacity.
@@ -102,6 +102,8 @@ Load factor = number of elements ("FILLED" + "TOMBSTONE") / size of array
   - Erase does not rehash
 - After a rehash, iterators are invalidated
 ## Error / exception behavior
-Strong exception guarantee for rehash by build-new-then-swap - on an exception, the container will be left in a valid, unmodified state.
-Other ops have a basic exception guarantee
+- Rehash:
+  - If type is copyable or no throw movable: strong exception guarantee by build-new-then-swap.
+  - Otherwise basic guarantee only
+
 ## Non-goals (explicitly state what you are NOT supporting)

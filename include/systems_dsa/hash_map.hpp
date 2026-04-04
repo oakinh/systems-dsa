@@ -164,6 +164,8 @@ class hash_map {
         return failure ? sentinelIndex : index;
     }
 
+
+
     template <typename vt>
     Bucket* insert_impl(vt&& pair, vector<Bucket>* bucketOverride = nullptr) {
         // Rehash if necessary
@@ -190,10 +192,10 @@ class hash_map {
         // Placement-new
         new (bucket.storage) value_type(std::forward<vt>(pair));
 
-        std::cout << "Index given to placementNew in insert: " << index << '\n';
-        std::cout << "bucketSize in placementNew in insert: " << buckets.size() << '\n';
-        std::cout << "bucket capacity in placementNew in insert: " << buckets.capacity() << '\n';
-        std::cout << "size() gives: " << size() << '\n';
+        // std::cout << "Index given to placementNew in insert: " << index << '\n';
+        // std::cout << "bucketSize in placementNew in insert: " << buckets.size() << '\n';
+        // std::cout << "bucket capacity in placementNew in insert: " << buckets.capacity() << '\n';
+        // std::cout << "size() gives: " << size() << '\n';
         if (state == State::TOMBSTONE) {
             --m_tombstones;
         }
@@ -355,15 +357,13 @@ public:
         return eraseAtIndex(index);
     }
 
+    // Exception guarantee:
+    // Strong if type is copyable or nothrow movable
+    // Otherwise basic only
     void rehash(std::size_t count) {
         vector<Bucket> newBuckets {};
         newBuckets.resize(count);
         try {
-            // for (const Bucket& oldBucket : m_buckets) {
-            //     if (oldBucket.state == State::FILLED) {
-            //         insert(std::move_if_noexcept(*oldBucket.ptr()), &newBuckets);
-            //     }
-            // }
             std::cout << "**START REHASH**\n";
             for (std::size_t i{}; i < m_buckets.size(); ++i) {
                 auto& oldBucket { m_buckets[i] };
@@ -373,7 +373,7 @@ public:
             }
         } catch (...) {
             //for (const Bucket& newBucket : newBuckets) {
-            for (std::size_t i {}; i< newBuckets.size(); ++i) {
+            for (std::size_t i {}; i < newBuckets.size(); ++i) {
                 newBuckets[i].ptr()->~value_type();
             }
             throw;

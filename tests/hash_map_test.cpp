@@ -162,6 +162,8 @@ TEST(HashMapTest, ContainerUnmodifiedAfterReserveException) {
 
     // Throws on reserve
     EXPECT_ANY_THROW(hashMap.reserve(15));
+    // Strong guarantee, size unchanged
+    EXPECT_EQ(hashMap.size(), 4);
 
     for (std::size_t i {}; i < 4; ++i) {
         EXPECT_NO_THROW({
@@ -184,7 +186,8 @@ TEST(HashMapTest, ContainerUnmodifiedAfterInsertException) {
 
     // Throws on insert
     EXPECT_ANY_THROW(hashMap.insert(3, ThrowsOnCopy{}));
-
+    // Strong guarantee, size unchanged
+    EXPECT_EQ(hashMap.size(), 3);
     for (std::size_t i {}; i < 3; ++i) {
         EXPECT_NO_THROW({
             auto* p = hashMap.find(i);
