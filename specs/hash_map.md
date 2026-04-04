@@ -104,7 +104,7 @@ struct Bucket {
 - Notes: Currently doesn't do real piecewise emplacement. No-ops if the key provided is already in the hash_map
 #### erase
 - Return value: std::size_t indicating the number of erased elements
-- Effects: Erases the element based on the key or index passed to it. No other side effects.
+- Effects: Erases the element based on the key or index passed to it. If erased, marks the element as a tombstone.
 - Complexity: O(1) amortized best case, O(n) worst case
 - Exceptions / guarantee: Strong exception safety guarantee
 #### swap
@@ -117,9 +117,10 @@ struct Bucket {
 - Exceptions / guarantee: Throws `std::out_of_range` if provided key isn't found
 #### operator[]
 - Return value: An l-value reference to the value associated with the provided key
-- Effects: If the key provided isn't found, it default constructs a pair into the container.
+- Effects: If the key provided isn't found, it constructs a pair into the container, copy-constructing the Key, and value-initializing the mapped value. Calls rehash() if load factor exceeds the threshold.
 - Complexity: O(1) amortized best case, O(n) worst case
 - Exceptions / guarantee: Strong if type is copyable or nothrow movable, otherwise basic only
+- Notes: Key is required to be _CopyConstructible_ and the value is required to be _DefaultConstructible_.
 #### find
 - Return value: A pointer to the value associated with the provided key, nullptr if the key wasn't found
 - Effects: No side effects
