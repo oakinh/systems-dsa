@@ -26,7 +26,7 @@ protected:
 enum class OP: std::uint8_t {
     INSERT,
     ERASE,
-    CONTAINS,
+    FIND,
 };
 
 ///////////////////////////////
@@ -203,14 +203,24 @@ TEST(HashMapTest, RandomSeqInsertEraseContainsAgainstStd) {
         const int val { distKeyVal(rng) };
         switch (static_cast<OP>(op)) {
         case OP::INSERT:
-            hashMap.insert(key, val);
-            reference[key] = val;
+            hashMap.insert({ key, val });
+            reference.insert({ key, val });
             break;
         case OP::ERASE:
             hashMap.erase(key);
             reference.erase(key);
-        case OP::CONTAINS:
-            EXPECT_EQ(hashMap.contains(key), reference.contains(key));
+            break;
+        case OP::FIND:
+            const auto* valPtr{ hashMap.find(key) };
+            const auto& refIt { reference.find(key) };
+
+            if (valPtr == nullptr) {
+                if (refIt != reference.end()) {
+                    FAIL();
+                }
+            } else {
+                EXPECT_EQ(*valPtr, refIt->second);
+            }
             EXPECT_EQ(hashMap.size(), reference.size());
             break;
         }
@@ -219,12 +229,26 @@ TEST(HashMapTest, RandomSeqInsertEraseContainsAgainstStd) {
 
 TEST(HashMapTest, HeavyTombstoneAccumulation) {
     systems_dsa::hash_map<int, int> hashMap {};
-
-    for (std::size_t i {}; i < 10; ++i) {
-        hashMap.clear();
-        for (std::size_t j {}; j < 100; ++j) {
+    std::size_t expectedFinalSize { 100 };
+    for (int i {}; i < 10; ++i) {
+        for (int k {}; k < static_cast<int>(hashMap.size()); ++k) {
+            hashMap.erase(k);
+        }
+        for (int j {}; j < static_cast<int>(expectedFinalSize); ++j) {
             hashMap.insert(j, j + 100);
         }
     }
-    EXPECT_EQ(hashMap.size(), 10'000) << "hashMap.size() != 10'000, and is instead: " << hashMap.size() << '\n';
+    EXPECT_EQ(hashMap.size(), expectedFinalSize) << "hashMap.size() != expectedFinalSize, and is instead: " << hashMap.size() << '\n';
+}
+
+TEST(HashMapTest, HeavyRepeatedClearing) {
+    systems_dsa::hash_map<int, int> hashMap {};
+    std::size_t expectedFinalSize { 100 };
+    for (int i {}; i < 10; ++i) {
+        hashMap.clear();
+        for (int j {}; j < static_cast<int>(expectedFinalSize); ++j) {
+            hashMap.insert(j, j + 100);
+        }
+    }
+    EXPECT_EQ(hashMap.size(), expectedFinalSize) << "hashMap.size() != expectedFinalSize, and is instead: " << hashMap.size() << '\n';
 }
