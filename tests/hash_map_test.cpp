@@ -23,11 +23,7 @@ protected:
     }
 };
 
-enum class OP: std::uint8_t {
-    INSERT,
-    ERASE,
-    FIND,
-};
+
 
 ///////////////////////////////
 // Basic functionality tests //
@@ -189,6 +185,12 @@ TEST_F(HashMapTest_F, DuplicateInsertNoOps) {
 /////////////////////////
 
 TEST(HashMapTest, RandomSeqInsertEraseFindAgainstStd) {
+    enum class OP: std::uint8_t {
+        INSERT,
+        ERASE,
+        FIND,
+    };
+
     std::uint64_t seed { getSeed("HASHMAP_SEED") };
     std::mt19937_64 rng(seed);
     std::uniform_int_distribution<int> distKeyVal(1, 1000);
@@ -205,6 +207,95 @@ TEST(HashMapTest, RandomSeqInsertEraseFindAgainstStd) {
         case OP::INSERT:
             hashMap.insert({ key, val });
             reference.insert({ key, val });
+            break;
+        case OP::ERASE:
+            hashMap.erase(key);
+            reference.erase(key);
+            break;
+        case OP::FIND:
+            const auto* valPtr{ hashMap.find(key) };
+            const auto& refIt { reference.find(key) };
+
+            if (valPtr == nullptr) {
+                if (refIt != reference.end()) {
+                    FAIL();
+                }
+            } else {
+                EXPECT_EQ(*valPtr, refIt->second);
+            }
+            EXPECT_EQ(hashMap.size(), reference.size());
+            break;
+        }
+    }
+}
+
+TEST(HashMapTest, RandomSeqOperatorBracketsEraseFindAgainstStd) {
+    enum class OP: std::uint8_t {
+        OPERATOR_BRACKETS,
+        ERASE,
+        FIND,
+    };
+    std::uint64_t seed { getSeed("HASHMAP_SEED") };
+    std::mt19937_64 rng(seed);
+    std::uniform_int_distribution<int> distKeyVal(1, 40);
+    std::uniform_int_distribution<int> distOp(0, 2);
+
+    systems_dsa::hash_map<int, int> hashMap {};
+    std::unordered_map<int, int> reference {};
+
+    for (std::size_t i {}; i < 1000; ++i) {
+        const int op { distOp(rng) };
+        const int key { distKeyVal(rng) };
+        const int val { distKeyVal(rng) };
+        switch (static_cast<OP>(op)) {
+        case OP::OPERATOR_BRACKETS:
+            hashMap[key] = val;
+            reference[key] = val;
+            break;
+        case OP::ERASE:
+            hashMap.erase(key);
+            reference.erase(key);
+            break;
+        case OP::FIND:
+            const auto* valPtr{ hashMap.find(key) };
+            const auto& refIt { reference.find(key) };
+
+            if (valPtr == nullptr) {
+                if (refIt != reference.end()) {
+                    FAIL();
+                }
+            } else {
+                EXPECT_EQ(*valPtr, refIt->second);
+            }
+            EXPECT_EQ(hashMap.size(), reference.size());
+            break;
+        }
+    }
+}
+
+TEST(HashMapTest, RandomSeqEmplaceEraseFindAgainstStd) {
+    enum class OP: std::uint8_t {
+        EMPLACE,
+        ERASE,
+        FIND,
+    };
+
+    std::uint64_t seed { getSeed("HASHMAP_SEED") };
+    std::mt19937_64 rng(seed);
+    std::uniform_int_distribution<int> distKeyVal(1, 1000);
+    std::uniform_int_distribution<int> distOp(0, 2);
+
+    systems_dsa::hash_map<int, int> hashMap {};
+    std::unordered_map<int, int> reference {};
+
+    for (std::size_t i {}; i < 10'000; ++i) {
+        const int op { distOp(rng) };
+        const int key { distKeyVal(rng) };
+        const int val { distKeyVal(rng) };
+        switch (static_cast<OP>(op)) {
+        case OP::EMPLACE:
+            hashMap.emplace(key, val);
+            reference.emplace(key, val);
             break;
         case OP::ERASE:
             hashMap.erase(key);
@@ -246,7 +337,9 @@ TEST(HashMapTest, HeavyRepeatedClearing) {
     std::size_t expectedFinalSize { 100 };
     for (int i {}; i < 10; ++i) {
         hashMap.clear();
+        EXPECT_EQ(hashMap.size(), 0);
         for (int j {}; j < static_cast<int>(expectedFinalSize); ++j) {
+            EXPECT_FALSE(hashMap.contains(j) && "Clearing failed to destroy all elements");
             hashMap.insert(j, j + 100);
         }
     }
@@ -264,4 +357,25 @@ TEST(HashMapTest, HeavyRehashing) {
         EXPECT_NE(valPtr, nullptr);
         EXPECT_EQ(*valPtr, i + 10);
     }
+}
+
+TEST(HashMapTest, EverythingCollides) {
+    struct ConstantHasher {
+        std::size_t operator()(const int&) const noexcept {
+            return 0;
+        }
+    };
+
+    systems_dsa::hash_map<int, int, ConstantHasher> hashMap {};
+
+    for (int i {}; i < 20; ++i) {
+        hashMap.insert({ i, i + 10 });
+    }
+    hashMap.erase(0);
+    hashMap.erase(2);
+    hashMap.erase(3);
+    hashMap.erase(4);
+
+    EXPECT_EQ(*hashMap.find(1), 1 + 10);
+    EXPECT_EQ(*hashMap.find(5), 5 + 10);
 }

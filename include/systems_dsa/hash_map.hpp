@@ -318,9 +318,10 @@ public:
     }
 
     V& operator[](const K& key) {
-        const V* valPtr { find(key) };
+        V* valPtr { find(key) };
         if (valPtr == nullptr) {
-            return *insert_impl({ {}, {} });
+            Bucket* bucket { insert_impl(value_type(key, {})) };
+            return bucket->val();
         }
         return *valPtr;
     }
@@ -419,10 +420,7 @@ private:
                 const auto valFound { find(bucket.key()) };
                 assert(valFound && "nullptr returned when attempting to find valid key");
                 if (!(valFound == &bucket.val())) {
-                    std::cerr << "valFound: " << *valFound
-                              << " did not equal expected value: " << bucket.val()
-                              << "\n";
-                    assert(false);
+                    assert(false && "valFound did not equal expected value");
                 }
             }
         }
