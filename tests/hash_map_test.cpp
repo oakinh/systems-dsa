@@ -252,3 +252,16 @@ TEST(HashMapTest, HeavyRepeatedClearing) {
     }
     EXPECT_EQ(hashMap.size(), expectedFinalSize) << "hashMap.size() != expectedFinalSize, and is instead: " << hashMap.size() << '\n';
 }
+
+TEST(HashMapTest, HeavyRehashing) {
+    systems_dsa::hash_map<int, int> hashMap {};
+
+    for (int i {}; i < 1000; ++i) {
+        hashMap.insert({ i, i + 10 });
+    }
+    for (int i {}; i < 1000; ++i) {
+        const auto* valPtr { hashMap.find(i) };
+        EXPECT_NE(valPtr, nullptr);
+        EXPECT_EQ(*valPtr, i + 10);
+    }
+}
