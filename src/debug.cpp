@@ -39,7 +39,5 @@ int main() {
         hashMap.insert(p);
     }
 
-    std::cout << hashMap << '\n';
-
 	return 0;
 }

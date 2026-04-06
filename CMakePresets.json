@@ -53,8 +53,7 @@
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CXX_FLAGS": "-stdlib=libc++ -O3 -march=native -DNDEBUG",
-        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++"
+        "SYSTEMS_DSA_BUILD_SCRATCH": "OFF"
       }
     },
     {

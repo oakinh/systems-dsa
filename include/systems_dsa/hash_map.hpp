@@ -20,6 +20,7 @@ template <typename Eq, typename K>
 concept ValidKeyEqual =
     std::predicate<Eq, const K&, const K&>;
 
+
 // Forward declaration
 template <
     typename K,
@@ -31,10 +32,12 @@ requires ValidHasher<Hasher, K> &&
     ValidKeyEqual<KeyEqual, K>
 class hash_map;
 
+#ifndef NDEBUG
 // Forward declaration
 template <class K, class V, class Hash, class KeyEq>
 std::ostream& operator<<(std::ostream& out,
                          const hash_map<K, V, Hash, KeyEq>& hashMap);
+#endif
 
 // Start of class
 template <
