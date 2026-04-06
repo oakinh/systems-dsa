@@ -188,7 +188,7 @@ TEST_F(HashMapTest_F, DuplicateInsertNoOps) {
 // Adversarial testing //
 /////////////////////////
 
-TEST(HashMapTest, RandomSeqInsertEraseContainsAgainstStd) {
+TEST(HashMapTest, RandomSeqInsertEraseFindAgainstStd) {
     std::uint64_t seed { getSeed("HASHMAP_SEED") };
     std::mt19937_64 rng(seed);
     std::uniform_int_distribution<int> distKeyVal(1, 1000);
