@@ -98,7 +98,6 @@ class hash_map {
     std::size_t getKeyIndex(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
         const auto& buckets { bucketOverride ? *bucketOverride : m_buckets };
         std::size_t hashedKey { m_hasher(key) };
-        // std::cout << "hashedKey: " << hashedKey << " - buckets.size(): " << buckets.size() << '\n';
         return hashedKey > 0
             ? hashedKey % buckets.size()
             : 0;
@@ -109,7 +108,7 @@ class hash_map {
         const auto& buckets { m_buckets};
         const std::size_t bucketSize { buckets.size() };
         assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
-        // std::cout << "bucketSize: " << bucketSize << '\n';
+
         bool failure = false;
         for (std::size_t iterations {}; iterations < bucketSize; ++iterations, index = (index + 1) % bucketSize) {
             assert(index < bucketSize && "Index in probe not less than bucketSize");
@@ -130,11 +129,11 @@ class hash_map {
     std::size_t probeForInsert(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
         std::size_t index { getKeyIndex(key, bucketOverride) };
         // Probing for insertion, probing stops on an OPEN or TOMBSTONE bucket
-        // std::cout << "Index in probe: " << index << " - key in probe: " << key.value_or(0) << '\n';
+
         const auto& buckets { bucketOverride ? *bucketOverride : m_buckets};
         const std::size_t bucketSize { buckets.size() };
         assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
-        // std::cout << "bucketSize: " << bucketSize << '\n';
+
         bool failure = false;
         std::size_t tombstoneIndex { sentinelIndex };
         for (std::size_t iterations {}; iterations < bucketSize; ++iterations, index = (index + 1) % bucketSize) {
@@ -169,7 +168,6 @@ class hash_map {
     Bucket* insert_impl(vt&& pair, vector<Bucket>* bucketOverride = nullptr) {
         // Rehash if necessary
         if (bucketOverride == nullptr && getLoadFactor(1) >= 0.70f) {
-            std::cout << "**REHASHING**\n";
             rehash(m_buckets.size() * 2);
 
         }
@@ -177,7 +175,6 @@ class hash_map {
         vector<Bucket>& buckets { bucketOverride ? *bucketOverride : m_buckets };
         std::size_t index { probeForInsert(pair.first, bucketOverride) };
         if (index == sentinelIndex) {
-            std::cout << "Duplicate key insertion attempted, no op'ing\n";
             // Duplicate key, no op
             return nullptr;
         }
@@ -192,19 +189,12 @@ class hash_map {
 
         new (bucket.storage) value_type(std::forward<vt>(pair));
 
-        // std::cout << "Index given to placementNew in insert: " << index << '\n';
-        // std::cout << "bucketSize in placementNew in insert: " << buckets.size() << '\n';
-        // std::cout << "bucket capacity in placementNew in insert: " << buckets.capacity() << '\n';
-        // std::cout << "size() gives: " << size() << '\n';
         if (state == State::TOMBSTONE) {
             --m_tombstones;
         }
         bucket.state = State::FILLED;
         if (bucketOverride == nullptr) {
             ++m_filled;
-            std::cout << "Insert successful of: " << pair.first << '\n';
-        } else {
-            std::cout << "REinsert successful of: " << pair.first << '\n';
         }
 
         HM_ASSERT_VALID();
@@ -307,16 +297,13 @@ public:
     V* find(const K& key) {
         std::size_t index { probeForKey(key) };
         if (index >= m_buckets.size()) {
-            std::cout << "index: " << index << " - nullptr placeholder\n";
             return nullptr;
         }
         return index < m_buckets.size() ? &m_buckets[index].val() : nullptr;
     }
     const V* find(const K& key) const {
         std::size_t index { probeForKey(key) };
-        // std::cout << "findKey: " << m_buckets[index].key() << '\n';
         if (index >= m_buckets.size()) {
-            std::cout << "index: " << index << " - nullptr placeholder\n";
             return nullptr;
         }
         return index < m_buckets.size() ? &m_buckets[index].val() : nullptr;
@@ -374,7 +361,6 @@ public:
         vector<Bucket> newBuckets {};
         newBuckets.resize(count);
         try {
-            std::cout << "**START REHASH**\n";
             for (std::size_t i{}; i < m_buckets.size(); ++i) {
                 auto& oldBucket { m_buckets[i] };
                 if (oldBucket.state == State::FILLED) {
@@ -390,7 +376,6 @@ public:
         }
         m_tombstones = 0;
         m_buckets = std::move(newBuckets);
-        std::cout << "**END REHASH**\n";
         HM_ASSERT_VALID();
     }
 
@@ -431,13 +416,12 @@ private:
                 assert(false && "Unreachable code reached in assert valid switch statement - bucket.state default case");
             }
             if (bucket.state == State::FILLED) {
-                //std::cout << "assertValid bucketKey: " << bucket.key() << '\n';
                 const auto valFound { find(bucket.key()) };
                 assert(valFound && "nullptr returned when attempting to find valid key");
                 if (!(valFound == &bucket.val())) {
-                    // std::cerr << "valFound: " << *valFound
-                    //           << " did not equal expected value: " << bucket.val()
-                    //           << "\n";
+                    std::cerr << "valFound: " << *valFound
+                              << " did not equal expected value: " << bucket.val()
+                              << "\n";
                     assert(false);
                 }
             }
