@@ -406,8 +406,9 @@ public:
         HM_ASSERT_VALID();
     }
 
-private:
+
 #ifndef NDEBUG
+private:
     // This function checks numerous invariants of our hash_map, to assert that it is in a valid state.
     // We do this regardless of runtime overhead, in debug builds only.
     void assertValid() const {
@@ -471,5 +472,8 @@ std::ostream& operator<< (std::ostream& out,
     out << "]";
     return out;
 }
+#else
+};
 #endif
+
 }
