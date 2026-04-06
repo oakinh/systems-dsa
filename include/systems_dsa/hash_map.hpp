@@ -453,7 +453,10 @@ private:
 public:
     template <class K2, class V2, class H2, class E2>
     friend std::ostream& operator<< (std::ostream&, const hash_map<K2, V2, H2, E2>&);
+#endif
 };
+
+#ifndef NDEBUG
 template <class K, class V, class Hash, class KeyEq>
 std::ostream& operator<< (std::ostream& out,
     const hash_map<K, V, Hash, KeyEq>& hashMap) {
@@ -472,8 +475,6 @@ std::ostream& operator<< (std::ostream& out,
     out << "]";
     return out;
 }
-#else
-};
 #endif
 
 }
