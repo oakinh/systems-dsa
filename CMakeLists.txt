@@ -63,8 +63,11 @@ endfunction()
 # ------------------------------------------------------------------------------
 # Scratchpad executable (src/debug.cpp)
 # ------------------------------------------------------------------------------
+
 if(SYSTEMS_DSA_BUILD_SCRATCH)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/debug.cpp")
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        message(STATUS "Skipping systems_dsa_scratch in Release build.")
+    elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/debug.cpp")
         add_executable(systems_dsa_scratch src/debug.cpp)
         target_link_libraries(systems_dsa_scratch PRIVATE systems_dsa::systems_dsa)
         systems_dsa_apply_tidy(systems_dsa_scratch)
