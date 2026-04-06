@@ -189,6 +189,7 @@ class hash_map {
             return nullptr;
         }
         // Placement-new
+
         new (bucket.storage) value_type(std::forward<vt>(pair));
 
         // std::cout << "Index given to placementNew in insert: " << index << '\n';
@@ -216,9 +217,14 @@ class hash_map {
             auto& bucket { m_buckets[index] };
             if (bucket.state == State::FILLED) {
                 bucket.ptr()->~value_type();
-                // If we're clearing all elements, we set the state to OPEN
-                bucket.state = clear.value_or(false) ? State::OPEN : State::TOMBSTONE;
-                ++m_tombstones;
+                if (clear.value_or(false)) {
+                    // If we're clearing all elements, we set the state to OPEN
+                    bucket.state = State::OPEN;
+                } else {
+                    bucket.state = State::TOMBSTONE;
+                    ++m_tombstones;
+                }
+
                 --m_filled;
                 erased = true;
             }
