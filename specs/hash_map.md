@@ -174,8 +174,9 @@ Dereferenceable iterator:
 - Incrementing `end()` is invalid
 - **Returns**: Either another dereferenceable iterator, or `end()`
 ### operator ==
-- 
+- Checks equality with both the owner and currentIndex
 ### operator !=
+- Checks non-equality with both the owner and the currentIndex
 - ~~~~~~~~~~~~
 ### Invalidation
 - On erase: that iterator is definitely invalid, and all other iterators are guaranteed to be valid
