@@ -181,6 +181,18 @@ TEST_F(HashMapTest_F, DuplicateInsertNoOps) {
     }
 }
 
+TEST_F(HashMapTest_F, IteratorTraversal) {
+    for (auto it = hashMap.begin(); it != hashMap.end(); ++it) {
+        EXPECT_NE(hashMap.find(it->first), nullptr);
+    }
+}
+
+TEST_F(HashMapTest_F, RangeBasedLoop) {
+    for (const auto& pair : hashMap) {
+        EXPECT_NE(hashMap.find(pair.first), nullptr);
+    }
+}
+
 /////////////////////////
 // Adversarial testing //
 /////////////////////////
