@@ -408,32 +408,33 @@ public:
     //////////////
     class iterator {
         std::size_t m_currentIndex = sentinelIndex;
-        hash_map* m_owner = nullptr;
+        hash_map<K, V, Hasher, KeyEqual>* m_owner = nullptr;
 
     public:
         iterator() = default;
 
-        iterator(std::size_t currentIndex, hash_map* owner) noexcept
+        iterator(std::size_t currentIndex, hash_map<K, V, Hasher, KeyEqual>* owner) noexcept
             : m_currentIndex(currentIndex)
             , m_owner(owner)
         {}
 
         value_type& operator*() const {
-            assert(m_currentIndex != m_buckets.size() && "Attempted to dereference an end iterator");
-            Bucket& bucket { m_buckets[m_currentIndex] };
+            assert(m_currentIndex != m_owner->m_buckets.size() && "Attempted to dereference an end iterator");
+            Bucket& bucket { m_owner->m_buckets[m_currentIndex] };
             assert(bucket.state == State::FILLED && "Attempted to dereference a non-FILLED iterator");
             return *bucket.ptr();
         }
 
         value_type* operator->() const {
-            assert(m_currentIndex != m_buckets.size() && "Attempted to dereference an end iterator");
-            Bucket& bucket { m_buckets[m_currentIndex] };
+            assert(m_currentIndex != m_owner->m_buckets.size() && "Attempted to dereference an end iterator");
+            Bucket& bucket { m_owner->m_buckets[m_currentIndex] };
             assert(bucket.state == State::FILLED && "Attempted to dereference a non-FILLED iterator");
             return bucket.ptr();
         }
 
         iterator operator++() {
-            return { probeForFilled(m_currentIndex), this };
+            std::cout << "operator++, sending: " << m_currentIndex + 1 << '\n';
+            return { m_owner->probeForFilled(m_currentIndex + 1), this->m_owner };
         }
 
         bool operator==(const iterator& other) const {
@@ -446,11 +447,11 @@ public:
         }
     };
 
-    iterator begin() const {
+    iterator begin() {
         return { probeForFilled(), this };
     }
 
-    iterator end() const {
+    iterator end() {
         return { m_buckets.size(), this };
     }
 
