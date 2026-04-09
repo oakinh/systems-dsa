@@ -1,6 +1,7 @@
 #pragma once
 #include <systems_dsa/vector.hpp>
 #include <concepts>
+#include <new>
 
 
 namespace systems_dsa {
@@ -90,8 +91,8 @@ class hash_map {
     std::size_t m_filled {}; // Filled count only
     constexpr static float maxLoadFactor { 0.7f };
     Hasher m_hasher;
-    KeyEqual m_eq;
-    constexpr static std::size_t sentinelIndex { std::numeric_limits<std::size_t>::max() };
+    KeyEqual m_eq; // TODO: Needs usage
+    constexpr static std::size_t sentinelIndex { std::numeric_limits<std::size_t>::max() }; // TODO: Refactor to using m_buckets.size()
 
     // Member functions
     float getLoadFactor(const std::optional<std::size_t> additions = std::nullopt) const {
@@ -165,7 +166,15 @@ class hash_map {
         return failure ? sentinelIndex : index;
     }
 
-
+    std::size_t probeForFilled(std::optional<std::size_t> startingIndex = std::nullopt) const {
+        assert(startingIndex.value_or(0) < m_buckets.size());
+        for (std::size_t i { startingIndex.value_or(0) }; i < m_buckets.size(); ++i) {
+            if (m_buckets[i].state == State::FILLED) {
+                return i;
+            }
+        }
+        return m_buckets.size();
+    }
 
     template <typename vt>
     Bucket* insert_impl(vt&& pair, vector<Bucket>* bucketOverride = nullptr) {
@@ -394,7 +403,56 @@ public:
         }
         HM_ASSERT_VALID();
     }
+    //////////////
+    // Iterator //
+    //////////////
+    class iterator {
+        std::size_t m_currentIndex = sentinelIndex;
+        hash_map* m_owner = nullptr;
 
+    public:
+        iterator() = default;
+
+        iterator(std::size_t currentIndex, hash_map* owner) noexcept
+            : m_currentIndex(currentIndex)
+            , m_owner(owner)
+        {}
+
+        value_type& operator*() const {
+            assert(m_currentIndex != m_buckets.size() && "Attempted to dereference an end iterator");
+            Bucket& bucket { m_buckets[m_currentIndex] };
+            assert(bucket.state == State::FILLED && "Attempted to dereference a non-FILLED iterator");
+            return *bucket.ptr();
+        }
+
+        value_type* operator->() const {
+            assert(m_currentIndex != m_buckets.size() && "Attempted to dereference an end iterator");
+            Bucket& bucket { m_buckets[m_currentIndex] };
+            assert(bucket.state == State::FILLED && "Attempted to dereference a non-FILLED iterator");
+            return bucket.ptr();
+        }
+
+        iterator operator++() {
+            return { probeForFilled(m_currentIndex), this };
+        }
+
+        bool operator==(const iterator& other) const {
+            return m_owner == other.m_owner && m_currentIndex == other.m_currentIndex;
+        }
+
+        bool operator!=(const iterator& other) const {
+            // return !(m_owner == other.m_owner && m_currentIndex == other.m_currentIndex);
+            return (m_owner != other.m_owner || m_currentIndex != other.m_currentIndex);
+        }
+    };
+
+    iterator begin() const {
+        return { probeForFilled(), this };
+    }
+
+    iterator end() const {
+        return { m_buckets.size(), this };
+    }
 
 #ifndef NDEBUG
 private:
@@ -461,5 +519,4 @@ std::ostream& operator<< (std::ostream& out,
     return out;
 }
 #endif
-
 }
