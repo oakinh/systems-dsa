@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <random>
+#include <unordered_map>
 #include <systems_dsa/hash_map.hpp>
 
 class HashMapTest_F : public testing::Test {

@@ -152,9 +152,36 @@ Load factor = number of elements ("FILLED" + "TOMBSTONE") / size of array
 ## Deletion strategy
 - Call destructors if not trivially destructible, mark as tombstone
 ## Iterator & invalidation rules
-- On erase, that iterator is definitely invalid, and all other iterators are guaranteed to be valid
+Valid iterator state:
+- Either points to a `FILLED` bucket
+- or is the `end()` sentinel
+Dereferenceable iterator:
+- Points to a `FILLED` bucket
+### Storage
+- Stores: 
+  - `std::size_t currentIndex`
+  - `hash_map* owner`
+### begin()
+- Returns: first `FILLED` bucket
+- Otherwise, `begin() == end()`
+### end()
+- Represented as: capacity of hash_map (`vector.size()`)
+### operator*
+- Dereference is valid only for dereferenceable iterators
+  - Meaning the current position is a `FILLED` bucket
+### operator++
+- Increment `currentIndex` until the next `FILLED` bucket is hit, or `end()`
+- Incrementing `end()` is invalid
+- **Returns**: Either another dereferenceable iterator, or `end()`
+### operator ==
+- 
+### operator !=
+- ~~~~~~~~~~~~
+### Invalidation
+- On erase: that iterator is definitely invalid, and all other iterators are guaranteed to be valid
   - Erase does not rehash
 - After a rehash, iterators are invalidated
+- After an insert, iterators are valid if a rehash did not occur, otherwise they are all invalid.
 ## Non-goals
 - Perfect parity with std::unordered_map
 - Thread-safe usage
