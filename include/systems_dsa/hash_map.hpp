@@ -3,6 +3,12 @@
 #include <concepts>
 #include <new>
 
+// "DONE" Checklist
+// TODO: const iterator
+// TODO: erase(iterator)
+// TODO: insert return iterator
+// TODO: spec cleanup
+// TODO: One or two more adversarial tests
 
 namespace systems_dsa {
 

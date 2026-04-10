@@ -181,10 +181,20 @@ TEST_F(HashMapTest_F, DuplicateInsertNoOps) {
     }
 }
 
-TEST_F(HashMapTest_F, IteratorTraversal) {
+TEST_F(HashMapTest_F, IteratorPreIncrementTraversal) {
     std::size_t i {};
     for (auto it = hashMap.begin(); it != hashMap.end(); ++it, ++i) {
-        std::cout << "It->first: " << it->first << '\n';
+        EXPECT_NE(hashMap.find(it->first), nullptr);
+        EXPECT_EQ(*hashMap.find(it->first), it->second);
+        if (i == hashMap.size()) {
+            FAIL() << "Iterator failed to reach end, terminating \n";
+        }
+    }
+}
+
+TEST_F(HashMapTest_F, IteratorPostIncrementTraversal) {
+    std::size_t i {};
+    for (auto it = hashMap.begin(); it != hashMap.end(); it++) {
         EXPECT_NE(hashMap.find(it->first), nullptr);
         EXPECT_EQ(*hashMap.find(it->first), it->second);
         if (i == hashMap.size()) {
@@ -199,6 +209,8 @@ TEST_F(HashMapTest_F, RangeBasedLoop) {
         EXPECT_EQ(*hashMap.find(pair.first), pair.second);
     }
 }
+
+
 
 /////////////////////////
 // Adversarial testing //
