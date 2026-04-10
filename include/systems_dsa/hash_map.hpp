@@ -167,7 +167,6 @@ class hash_map {
     }
 
     std::size_t probeForFilled(std::optional<std::size_t> startingIndex = std::nullopt) const {
-        assert(startingIndex.value_or(0) < m_buckets.size());
         for (std::size_t i { startingIndex.value_or(0) }; i < m_buckets.size(); ++i) {
             if (m_buckets[i].state == State::FILLED) {
                 return i;
@@ -433,10 +432,15 @@ public:
         }
 
         iterator operator++() {
-            std::cout << "operator++, sending: " << m_currentIndex + 1 << '\n';
             std::size_t nextFilledIndex { m_owner->probeForFilled(m_currentIndex + 1) };
             m_currentIndex = nextFilledIndex;
-            return { nextFilledIndex, this->m_owner };
+            return *this;
+        }
+
+        iterator operator++(int) {
+            iterator itCopy { *this };
+            m_currentIndex = m_owner->probeForFilled(m_currentIndex + 1);
+            return itCopy;
         }
 
         bool operator==(const iterator& other) const {
