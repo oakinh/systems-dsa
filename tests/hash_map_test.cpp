@@ -138,7 +138,7 @@ TEST(HashMapTest, ContainerUnmodifiedAfterReserveException) {
     // Strong guarantee, size unchanged
     EXPECT_EQ(hashMap.size(), 4);
 
-    for (std::size_t i {}; i < 4; ++i) {
+    for (std::size_t i {}; i < hashMap.size(); ++i) {
         EXPECT_NO_THROW({
             auto* p = hashMap.find(i);
             EXPECT_NE(p, nullptr) << "find failed for key i=" << i;
@@ -398,4 +398,28 @@ TEST(HashMapTest, EverythingCollides) {
 
     EXPECT_EQ(*hashMap.find(1), 1 + 10);
     EXPECT_EQ(*hashMap.find(5), 5 + 10);
+}
+
+TEST(HashMapTest, IteratorTraversalWithTombstonesAndOpen) {
+    struct IntHasher {
+        std::size_t operator()(const int& key) const noexcept {
+            return key;
+        }
+    };
+    systems_dsa::hash_map<int, int, IntHasher> hashMap {};
+
+    for (int i {}; i < 10; ++i) {
+        if (i == 7) continue;
+        hashMap.insert(i, i + 10);
+    }
+    hashMap.erase(3);
+    hashMap.erase(4);
+    hashMap.erase(8);
+
+    int filledCount {};
+    for (const auto& pair : hashMap) {
+        EXPECT_TRUE(hashMap.contains(pair.first));
+        ++filledCount;
+    }
+    EXPECT_EQ(filledCount, hashMap.size());
 }
