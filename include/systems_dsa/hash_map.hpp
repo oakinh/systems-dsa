@@ -434,7 +434,9 @@ public:
 
         iterator operator++() {
             std::cout << "operator++, sending: " << m_currentIndex + 1 << '\n';
-            return { m_owner->probeForFilled(m_currentIndex + 1), this->m_owner };
+            std::size_t nextFilledIndex { m_owner->probeForFilled(m_currentIndex + 1) };
+            m_currentIndex = nextFilledIndex;
+            return { nextFilledIndex, this->m_owner };
         }
 
         bool operator==(const iterator& other) const {
