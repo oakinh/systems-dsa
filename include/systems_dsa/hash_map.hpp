@@ -91,6 +91,12 @@ class hash_map {
             return ptr()->second;
         }
     };
+    template <bool isConst>
+    class iterator_impl;
+public:
+    using iterator = iterator_impl<false>;
+    using const_iterator = iterator_impl<true>;
+private:
     // Data
     vector<Bucket> m_buckets {};
     std::size_t m_tombstones {};
@@ -136,7 +142,7 @@ class hash_map {
         return failure ? sentinelIndex : index;
     }
 
-    std::size_t probeForInsert(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
+    std::pair<iterator, bool> probeForInsert(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
         std::size_t index { getKeyIndex(key, bucketOverride) };
         // Probing for insertion, probing stops on an OPEN or TOMBSTONE bucket
 
@@ -146,7 +152,8 @@ class hash_map {
 
         bool failure = false;
         std::size_t tombstoneIndex { sentinelIndex };
-        for (std::size_t iterations {}; iterations < bucketSize; ++iterations, index = (index + 1) % bucketSize) {
+        std::size_t iterations {};
+        for (; iterations < bucketSize; ++iterations, index = (index + 1) % bucketSize) {
             assert(index < bucketSize && "Index in probe not less than bucketSize");
             auto& bucket = buckets[index];
             State state = bucket.state;
@@ -161,15 +168,19 @@ class hash_map {
                 assert (state == State::FILLED);
                 // Key already exists, no op
                 failure = true;
+                break;
             }
         }
-        // assert((buckets[index].state == State::OPEN || buckets[index].state == State::TOMBSTONE)
-        //         && "In probe forInsert == true, state was not OPEN or TOMBSTONE");
+
         if (tombstoneIndex != sentinelIndex) {
             // Provide the last found tombstone for insertion if found
             index = tombstoneIndex;
         }
-        return failure ? sentinelIndex : index;
+        // return failure ? sentinelIndex : index;
+        return std::make_pair(
+            iterations < bucketSize ? iterator{ index, this } : end(),
+            !failure
+            );
     }
 
     std::size_t probeForFilled(std::optional<std::size_t> startingIndex = std::nullopt) const {
@@ -182,7 +193,7 @@ class hash_map {
     }
 
     template <typename vt>
-    Bucket* insert_impl(vt&& pair, vector<Bucket>* bucketOverride = nullptr) {
+    std::pair<iterator, bool> insert_impl(vt&& pair, vector<Bucket>* bucketOverride = nullptr) {
         // Rehash if necessary
         if (bucketOverride == nullptr && getLoadFactor(1) >= 0.70f) {
             rehash(m_buckets.size() * 2);
@@ -190,36 +201,40 @@ class hash_map {
         }
         // Take the reference AFTER a potential rehash
         vector<Bucket>& buckets { bucketOverride ? *bucketOverride : m_buckets };
-        std::size_t index { probeForInsert(pair.first, bucketOverride) };
-        if (index == sentinelIndex) {
-            // Duplicate key, no op
-            return nullptr;
-        }
-        auto& bucket = buckets[index];
-        State state = bucket.state;
-        if (state != State::OPEN && state != State::TOMBSTONE) {
-            std::cerr << "state is: " << static_cast<int>(state) << '\n';
-            //assert(false && "State was not OPEN or TOMBSTONE during insert, this statement should not have been reached in insert");
-            return nullptr;
-        }
-        // Placement-new
+        std::pair<iterator, bool> probeReturn { probeForInsert(pair.first, bucketOverride) };
+        // if (index == sentinelIndex) {
+        //     // Duplicate key, no op
+        //     return nullptr;
+        // }
 
-        new (bucket.storage) value_type(std::forward<vt>(pair));
+        if (probeReturn.second) {
+            // We only insert if probing for a suitable bucket was successful
+            auto& bucket = buckets[index];
+            State state = bucket.state;
+            if (state != State::OPEN && state != State::TOMBSTONE) {
+                std::cerr << "state is: " << static_cast<int>(state) << '\n';
+                assert(false && "Unreachable code reached in insert State was FILLED");
+                return { end(), false };
+            }
+            // Placement-new
 
-        if (state == State::TOMBSTONE) {
-            --m_tombstones;
-        }
-        bucket.state = State::FILLED;
-        if (bucketOverride == nullptr) {
-            ++m_filled;
+            new (bucket.storage) value_type(std::forward<vt>(pair));
+
+            if (state == State::TOMBSTONE) {
+                --m_tombstones;
+            }
+            bucket.state = State::FILLED;
+            if (bucketOverride == nullptr) {
+                ++m_filled;
+            }
         }
 
         HM_ASSERT_VALID();
-        return &bucket;
+        return probeReturn;
     }
 
     std::size_t eraseAtIndex(std::size_t index, const std::optional<bool> clear = std::nullopt) noexcept {
-        bool erased = false;
+        std::size_t erasedIndex { sentinelIndex };
         if (index < m_buckets.size()) {
             auto& bucket { m_buckets[index] };
             if (bucket.state == State::FILLED) {
@@ -233,11 +248,11 @@ class hash_map {
                 }
 
                 --m_filled;
-                erased = true;
+                erasedIndex = index;
             }
         }
         HM_ASSERT_VALID();
-        return erased ? 1 : 0;
+        return erasedIndex;
     }
 
 public:
@@ -278,20 +293,19 @@ public:
     // Modifiers //
     ///////////////
 
-    void insert(K&& first, V&& second) {
-        insert_impl(value_type{ std::move(first), std::move(second) });
+    std::pair<iterator, bool> insert(K&& first, V&& second) {
+        return insert_impl(value_type{std::move(first), std::move(second)});
+    }
+    std::pair<iterator, bool> insert(const K& first, const V& second) {
+        return insert_impl(value_type{ first, second });
     }
 
-    void insert(const K& first, const V& second) {
-        insert_impl(value_type{ first, second });
+    std::pair<iterator, bool> insert(const value_type& pair) {
+        return insert_impl(pair);
     }
 
-    void insert(const value_type& pair) {
-        insert_impl(pair);
-    }
-
-    void insert(value_type&& pair) {
-        insert_impl(std::move(pair));
+    std::pair<iterator, bool> insert(value_type&& pair) {
+        return insert_impl(std::move(pair));
     }
 
     // TODO: Implement piecewise-style emplacement
@@ -311,19 +325,21 @@ public:
             ));
     }
 
-    V* find(const K& key) {
+    iterator find(const K& key) {
         std::size_t index { probeForKey(key) };
         if (index >= m_buckets.size()) {
-            return nullptr;
+            return end();
         }
-        return index < m_buckets.size() ? &m_buckets[index].val() : nullptr;
+        return { index, this };
     }
-    const V* find(const K& key) const {
+
+    // TODO: Return const_iterator
+    iterator find(const K& key) const {
         std::size_t index { probeForKey(key) };
         if (index >= m_buckets.size()) {
-            return nullptr;
+            return end();
         }
-        return index < m_buckets.size() ? &m_buckets[index].val() : nullptr;
+        return { index, this };
     }
 
     bool contains(const K& key) const {
@@ -335,28 +351,28 @@ public:
     }
 
     V& operator[](const K& key) {
-        V* valPtr { find(key) };
-        if (valPtr == nullptr) {
+        iterator it { find(key) };
+        if (it == end()) {
             Bucket* bucket { insert_impl(value_type(key, {})) };
             return bucket->val();
         }
-        return *valPtr;
+        return it.second;
     }
 
     V& at(const K& key) {
-        std::size_t index { find(key) };
-        if (index >= size()) {
+        iterator it { find(key) };
+        if (it == end()) {
             throw std::out_of_range("The key provided was not found in the hashmap\n");
         }
-        return m_buckets[index].val();
+        return it.second;
     }
 
     const V& at(const K& key) const {
-        std::size_t index { find(key) };
-        if (index >= size()) {
+        iterator it { find(key) };
+        if (it == end()) {
             throw std::out_of_range("The key provided was not found in the hashmap\n");
         }
-        return m_buckets[index].val();
+        return it.second;
     }
 
     bool empty() const noexcept {
@@ -364,12 +380,22 @@ public:
     }
 
     std::size_t erase(const K& key) {
-        return eraseAtIndex(probeForKey(key));
+        // Returns the number of elements erased (0 or 1)
+        std::size_t erasedIndex { eraseAtIndex(probeForKey(key)) };
+        if (erasedIndex != sentinelIndex) {
+            return 1;
+        }
+        return 0;
     }
 
-    // TODO: Add iterator support
-    std::size_t erase(std::size_t index) noexcept {
-        return eraseAtIndex(index);
+    iterator erase(iterator pos) {
+        // Iterator must be valid and dereferenceable
+        std::size_t erasedIndex { eraseAtIndex(probeForKey(pos->first)) };
+        if (erasedIndex == sentinelIndex || erasedIndex == size()) {
+            return end();
+        }
+        std::size_t nextFilledIndex { probeForFilled(erasedIndex + 1) };
+        return { nextFilledIndex, this };
     }
 
     // Exception guarantee:
@@ -408,62 +434,79 @@ public:
         }
         HM_ASSERT_VALID();
     }
-    //////////////
-    // Iterator //
-    //////////////
-    class iterator {
+
+private:
+    ///////////////
+    // Iterators //
+    ///////////////
+
+    template <bool isConst>
+    class iterator_impl {
+        using reference = std::conditional_t<isConst, const value_type&, value_type&>;
+        using pointer = std::conditional_t<isConst, const value_type*, value_type*>;
+        using owner_type = std::conditional_t<isConst, const hash_map, hash_map>;
+        using bucket_type = std::conditional_t<isConst, const Bucket, Bucket>;
+
         std::size_t m_currentIndex = sentinelIndex;
-        hash_map<K, V, Hasher, KeyEqual>* m_owner = nullptr;
+        owner_type* m_owner = nullptr;
 
     public:
-        iterator() = default;
+        iterator_impl() = default;
 
-        iterator(std::size_t currentIndex, hash_map<K, V, Hasher, KeyEqual>* owner) noexcept
+        iterator_impl(std::size_t currentIndex, owner_type<K, V, Hasher, KeyEqual>* owner) noexcept
             : m_currentIndex(currentIndex)
             , m_owner(owner)
         {}
 
-        value_type& operator*() const {
+        reference operator*() const {
             assert(m_currentIndex != m_owner->m_buckets.size() && "Attempted to dereference an end iterator");
-            Bucket& bucket { m_owner->m_buckets[m_currentIndex] };
+            bucket_type& bucket { m_owner->m_buckets[m_currentIndex] };
             assert(bucket.state == State::FILLED && "Attempted to dereference a non-FILLED iterator");
             return *bucket.ptr();
         }
 
-        value_type* operator->() const {
+        pointer operator->() const {
             assert(m_currentIndex != m_owner->m_buckets.size() && "Attempted to dereference an end iterator");
-            Bucket& bucket { m_owner->m_buckets[m_currentIndex] };
+            bucket_type& bucket { m_owner->m_buckets[m_currentIndex] };
             assert(bucket.state == State::FILLED && "Attempted to dereference a non-FILLED iterator");
             return bucket.ptr();
         }
 
-        iterator operator++() {
+        reference operator++() {
             std::size_t nextFilledIndex { m_owner->probeForFilled(m_currentIndex + 1) };
             m_currentIndex = nextFilledIndex;
             return *this;
         }
 
-        iterator operator++(int) {
+        iterator_impl operator++(int) {
             iterator itCopy { *this };
             m_currentIndex = m_owner->probeForFilled(m_currentIndex + 1);
             return itCopy;
         }
 
-        bool operator==(const iterator& other) const {
+        bool operator==(const iterator_impl& other) const {
             return m_owner == other.m_owner && m_currentIndex == other.m_currentIndex;
         }
 
-        bool operator!=(const iterator& other) const {
-            // return !(m_owner == other.m_owner && m_currentIndex == other.m_currentIndex);
+        bool operator!=(const iterator_impl& other) const {
             return (m_owner != other.m_owner || m_currentIndex != other.m_currentIndex);
         }
     };
 
+public:
     iterator begin() {
         return { probeForFilled(), this };
     }
 
+    const_iterator begin() const {
+        return { probeForFilled(), this };
+    }
+
     iterator end() {
+        return { m_buckets.size(), this };
+    }
+
+    const_iterator end() const {
         return { m_buckets.size(), this };
     }
 
@@ -491,9 +534,9 @@ private:
                 assert(false && "Unreachable code reached in assert valid switch statement - bucket.state default case");
             }
             if (bucket.state == State::FILLED) {
-                const auto valFound { find(bucket.key()) };
-                assert(valFound && "nullptr returned when attempting to find valid key");
-                if (!(valFound == &bucket.val())) {
+                const auto foundIterator { find(bucket.key()) };
+                assert(foundIterator != end() && "end iterator returned when attempting to find valid key");
+                if (!(foundIterator->second == bucket.val())) {
                     assert(false && "valFound did not equal expected value");
                 }
             }
