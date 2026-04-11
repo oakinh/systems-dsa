@@ -101,13 +101,14 @@ private:
     std::size_t m_tombstones {};
     std::size_t m_filled {};
     Hasher m_hasher;
-    KeyEqual m_eq; // TODO: Needs usage
+    KeyEqual m_eq;
     constexpr static float maxLoadFactor { 0.7f };
     constexpr static std::size_t sentinelIndex { std::numeric_limits<std::size_t>::max() }; // TODO: Refactor to using m_buckets.size()
 
     // Member functions
-    float getLoadFactor(const std::optional<std::size_t> additions = std::nullopt) const {
-        return (m_tombstones + m_filled + additions.value_or(0)) / m_buckets.size();
+    double getLoadFactor(std::size_t additions = 0) const {
+        assert(!m_buckets.empty());
+        return static_cast<double>(m_tombstones + m_filled + additions) / static_cast<double>(m_buckets.size());
     }
 
     std::size_t getKeyIndex(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
@@ -228,13 +229,13 @@ private:
         return { iterator{ probeReturn.first, this }, probeReturn.second };
     }
 
-    std::size_t eraseAtIndex(std::size_t index, const std::optional<bool> clear = std::nullopt) noexcept {
+    std::size_t eraseAtIndex(std::size_t index, bool clear = false) noexcept {
         std::size_t erasedIndex { sentinelIndex };
         if (index < m_buckets.size()) {
             auto& bucket { m_buckets[index] };
             if (bucket.state == State::FILLED) {
                 bucket.ptr()->~value_type();
-                if (clear.value_or(false)) {
+                if (clear) {
                     // If we're clearing all elements, we set the state to OPEN
                     bucket.state = State::OPEN;
                 } else {
@@ -244,6 +245,9 @@ private:
 
                 --m_filled;
                 erasedIndex = index;
+            } else if (bucket.state == State::TOMBSTONE && clear) {
+                bucket.state = State::OPEN;
+                --m_tombstones;
             }
         }
         HM_ASSERT_VALID();
@@ -343,6 +347,7 @@ public:
         for (std::size_t i {}; i < m_buckets.size(); ++i) {
             eraseAtIndex(i, true);
         }
+        assert(m_tombstones == 0 && m_filled == 0);
         HM_ASSERT_VALID();
     }
 
@@ -403,6 +408,10 @@ public:
         return m_filled == 0;
     }
 
+    std::size_t bucket_count() const {
+        return m_buckets.size();
+    }
+
     /////////////
     // Hashing //
     /////////////
@@ -435,6 +444,14 @@ public:
     void reserve(std::size_t count) {
         float loadFactorMultiplier { 1.3f }; // This ensures that rehashing isn't necessary to hold `count` elements
         rehash(std::ceil(count * loadFactorMultiplier) + 1);
+    }
+
+    float load_factor() const {
+        return getLoadFactor();
+    }
+
+    float max_load_factor() const {
+        return maxLoadFactor;
     }
 
 private:
@@ -568,7 +585,7 @@ private:
         assert(filled == m_filled && "Filled count has drifted");
         assert(open == m_buckets.size() - m_filled - m_tombstones && "Open count has drifted");
         assert(open > 0 && "Open count was not greater than zero");
-        assert(getLoadFactor() == (filled + tombstones) / m_buckets.size() && "Load factor calculation is incorrect");
+        assert(getLoadFactor() == static_cast<double>(filled + tombstones) / m_buckets.size() && "Load factor calculation is incorrect");
         assert(getLoadFactor() < maxLoadFactor && "Load factor has exceeded allowed maximum");
     }
 
