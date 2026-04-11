@@ -48,11 +48,17 @@ TEST(HashMapTest, InsertAcceptsEither1Or2Args) {
     EXPECT_NO_FATAL_FAILURE();
 }
 
+TEST(HashMapTest, InsertReturnsValidIterator) {
+    systems_dsa::hash_map<int, int> hashMap {};
+    auto insertReturn { hashMap.insert({ 1, 10 }) };
+    EXPECT_EQ(hashMap.find(insertReturn.first->first), insertReturn.first);
+}
+
 TEST_F(HashMapTest_F, FindReturnsCorrectValue) {
     for (const auto& pair : pairs) {
-        const auto& valPtr { hashMap.find(pair.first) };
-        if (valPtr == nullptr) FAIL() << "valPtr was a nullptr, first: " << pair.first;
-        EXPECT_EQ(*hashMap.find(pair.first), pair.second);
+        const auto it { hashMap.find(pair.first) };
+        if (it == hashMap.end()) FAIL() << "it was end(), first: " << pair.first;
+        EXPECT_EQ(hashMap.find(pair.first)->second, pair.second);
     }
 }
 
@@ -104,9 +110,9 @@ TEST(HashMapTest, EraseReturnsZeroOnNonExistentKey) {
 
 TEST_F(HashMapTest_F, RehashLosesNoElements) {
     for (const auto& p : pairs) {
-        const auto* valPtr { hashMap.find(p.first) };
-        if (valPtr == nullptr) FAIL() << "valPtr was a null ptr, first: " << p.first;
-        EXPECT_EQ(*hashMap.find(p.first), p.second);
+        const auto it { hashMap.find(p.first) };
+        if (it == hashMap.end()) FAIL() << "it was end(), first: " << p.first;
+        EXPECT_EQ(hashMap.find(p.first)->second, p.second);
     }
 }
 
@@ -140,8 +146,8 @@ TEST(HashMapTest, ContainerUnmodifiedAfterReserveException) {
 
     for (std::size_t i {}; i < hashMap.size(); ++i) {
         EXPECT_NO_THROW({
-            auto* p = hashMap.find(i);
-            EXPECT_NE(p, nullptr) << "find failed for key i=" << i;
+            auto it = hashMap.find(i);
+            EXPECT_NE(it, hashMap.end()) << "find failed for key i=" << i;
         }) << "find threw for key i=" << i;
     }
     ThrowsOnCopy::resetCounts();
@@ -163,8 +169,8 @@ TEST(HashMapTest, ContainerUnmodifiedAfterInsertException) {
     EXPECT_EQ(hashMap.size(), 3);
     for (std::size_t i {}; i < 3; ++i) {
         EXPECT_NO_THROW({
-            auto* p = hashMap.find(i);
-            EXPECT_NE(p, nullptr) << "find failed for key i=" << i;
+            auto it = hashMap.find(i);
+            EXPECT_NE(it, hashMap.end()) << "find failed for key i=" << i;
         }) << "find threw for key i=" << i;
     }
     ThrowsOnCopy::resetCounts();
@@ -177,15 +183,15 @@ TEST_F(HashMapTest_F, DuplicateInsertNoOps) {
         const auto& pair { pairs[i] };
         const auto& key { pair.first };
         hashMap.insert(key, newValues[i]);
-        EXPECT_EQ(*hashMap.find(key), pair.second);
+        EXPECT_EQ(hashMap.find(key)->second, pair.second);
     }
 }
 
 TEST_F(HashMapTest_F, IteratorPreIncrementTraversal) {
     std::size_t i {};
     for (auto it = hashMap.begin(); it != hashMap.end(); ++it, ++i) {
-        EXPECT_NE(hashMap.find(it->first), nullptr);
-        EXPECT_EQ(*hashMap.find(it->first), it->second);
+        EXPECT_NE(hashMap.find(it->first), hashMap.end());
+        EXPECT_EQ(hashMap.find(it->first)->second, it->second);
         if (i == hashMap.size()) {
             FAIL() << "Iterator failed to reach end, terminating \n";
         }
@@ -195,8 +201,8 @@ TEST_F(HashMapTest_F, IteratorPreIncrementTraversal) {
 TEST_F(HashMapTest_F, IteratorPostIncrementTraversal) {
     std::size_t i {};
     for (auto it = hashMap.begin(); it != hashMap.end(); it++) {
-        EXPECT_NE(hashMap.find(it->first), nullptr);
-        EXPECT_EQ(*hashMap.find(it->first), it->second);
+        EXPECT_NE(hashMap.find(it->first), hashMap.end());
+        EXPECT_EQ(hashMap.find(it->first)->second, it->second);
         if (i == hashMap.size()) {
             FAIL() << "Iterator failed to reach end, terminating \n";
         }
@@ -205,8 +211,8 @@ TEST_F(HashMapTest_F, IteratorPostIncrementTraversal) {
 
 TEST_F(HashMapTest_F, RangeBasedLoop) {
     for (const auto& pair : hashMap) {
-        EXPECT_NE(hashMap.find(pair.first), nullptr);
-        EXPECT_EQ(*hashMap.find(pair.first), pair.second);
+        EXPECT_NE(hashMap.find(pair.first), hashMap.end());
+        EXPECT_EQ(hashMap.find(pair.first)->second, pair.second);
     }
 }
 
@@ -245,15 +251,15 @@ TEST(HashMapTest, RandomSeqInsertEraseFindAgainstStd) {
             reference.erase(key);
             break;
         case OP::FIND:
-            const auto* valPtr{ hashMap.find(key) };
-            const auto& refIt { reference.find(key) };
+            const auto it{ hashMap.find(key) };
+            const auto refIt { reference.find(key) };
 
-            if (valPtr == nullptr) {
+            if (it == hashMap.end()) {
                 if (refIt != reference.end()) {
                     FAIL();
                 }
             } else {
-                EXPECT_EQ(*valPtr, refIt->second);
+                EXPECT_EQ(it->second, refIt->second);
             }
             EXPECT_EQ(hashMap.size(), reference.size());
             break;
@@ -289,15 +295,15 @@ TEST(HashMapTest, RandomSeqOperatorBracketsEraseFindAgainstStd) {
             reference.erase(key);
             break;
         case OP::FIND:
-            const auto* valPtr{ hashMap.find(key) };
-            const auto& refIt { reference.find(key) };
+            const auto it{ hashMap.find(key) };
+            const auto refIt { reference.find(key) };
 
-            if (valPtr == nullptr) {
+            if (it == hashMap.end()) {
                 if (refIt != reference.end()) {
                     FAIL();
                 }
             } else {
-                EXPECT_EQ(*valPtr, refIt->second);
+                EXPECT_EQ(it->second, refIt->second);
             }
             EXPECT_EQ(hashMap.size(), reference.size());
             break;
@@ -334,15 +340,15 @@ TEST(HashMapTest, RandomSeqEmplaceEraseFindAgainstStd) {
             reference.erase(key);
             break;
         case OP::FIND:
-            const auto* valPtr{ hashMap.find(key) };
-            const auto& refIt { reference.find(key) };
+            const auto it{ hashMap.find(key) };
+            const auto refIt { reference.find(key) };
 
-            if (valPtr == nullptr) {
+            if (it == hashMap.end()) {
                 if (refIt != reference.end()) {
                     FAIL();
                 }
             } else {
-                EXPECT_EQ(*valPtr, refIt->second);
+                EXPECT_EQ(it->second, refIt->second);
             }
             EXPECT_EQ(hashMap.size(), reference.size());
             break;
@@ -385,9 +391,8 @@ TEST(HashMapTest, HeavyRehashing) {
         hashMap.insert({ i, i + 10 });
     }
     for (int i {}; i < 1000; ++i) {
-        const auto* valPtr { hashMap.find(i) };
-        EXPECT_NE(valPtr, nullptr);
-        EXPECT_EQ(*valPtr, i + 10);
+        const auto it { hashMap.find(i) };
+        EXPECT_EQ(it->second, i + 10);
     }
 }
 
@@ -408,8 +413,8 @@ TEST(HashMapTest, EverythingCollides) {
     hashMap.erase(3);
     hashMap.erase(4);
 
-    EXPECT_EQ(*hashMap.find(1), 1 + 10);
-    EXPECT_EQ(*hashMap.find(5), 5 + 10);
+    EXPECT_EQ(hashMap.find(1)->second, 1 + 10);
+    EXPECT_EQ(hashMap.find(5)->second, 5 + 10);
 }
 
 TEST(HashMapTest, IteratorTraversalWithTombstonesAndOpen) {
