@@ -250,6 +250,15 @@ TEST (HashMapTest, CorrectlyChecksEqualityWithKeyEqual) {
     EXPECT_EQ(hashMap.erase("ABC"), 1);
 }
 
+TEST(HashMapTest, RehashPolicyEnforced) {
+    systems_dsa::hash_map<int, int> hashMap { 10 };
+    EXPECT_EQ(hashMap.bucket_count(), 10);
+    for (std::size_t i{}; i < 7; ++i) {
+        hashMap.insert({ i, i + 10 });
+    }
+    EXPECT_GT(hashMap.bucket_count(), 10);
+}
+
 /////////////////////////
 // Adversarial testing //
 /////////////////////////
@@ -400,12 +409,14 @@ TEST(HashMapTest, HeavyRepeatedClearing) {
     systems_dsa::hash_map<int, int> hashMap {};
     std::size_t expectedFinalSize { 100 };
     for (int i {}; i < 10; ++i) {
+        hashMap.erase(1); // Erase to ensure tombstones are also properly cleared
         hashMap.clear();
         EXPECT_EQ(hashMap.size(), 0);
         for (int j {}; j < static_cast<int>(expectedFinalSize); ++j) {
             EXPECT_FALSE(hashMap.contains(j) && "Clearing failed to destroy all elements");
             hashMap.insert(j, j + 100);
         }
+
     }
     EXPECT_EQ(hashMap.size(), expectedFinalSize) << "hashMap.size() != expectedFinalSize, and is instead: " << hashMap.size() << '\n';
 }
