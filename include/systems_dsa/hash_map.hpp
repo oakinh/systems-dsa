@@ -94,13 +94,15 @@ public:
     using iterator = iterator_impl<false>;
     using const_iterator = iterator_impl<true>;
 private:
-    // Data
+    //////////////////
+    // Data Members //
+    //////////////////
     vector<Bucket> m_buckets {};
     std::size_t m_tombstones {};
-    std::size_t m_filled {}; // Filled count only
-    constexpr static float maxLoadFactor { 0.7f };
+    std::size_t m_filled {};
     Hasher m_hasher;
     KeyEqual m_eq; // TODO: Needs usage
+    constexpr static float maxLoadFactor { 0.7f };
     constexpr static std::size_t sentinelIndex { std::numeric_limits<std::size_t>::max() }; // TODO: Refactor to using m_buckets.size()
 
     // Member functions
@@ -131,7 +133,7 @@ private:
                 // We stop probing on OPEN buckets
                 failure = true;
                 break;
-            } else if (state == State::FILLED && bucket.key() == key) {
+            } else if (state == State::FILLED && m_eq(bucket.key(), key)) {
                 // Found key
                 break;
             }
@@ -161,7 +163,7 @@ private:
             } else if (state == State::OPEN) {
                 // We always stop probing on an OPEN bucket
                 break;
-            } else if (bucket.key() == key) {
+            } else if (m_eq(bucket.key(), key)) {
                 assert (state == State::FILLED);
                 // Key already exists, no op
                 failure = true;
