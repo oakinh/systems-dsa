@@ -318,6 +318,36 @@ public:
             ));
     }
 
+    std::size_t erase(const K& key) {
+        // Returns the number of elements erased (0 or 1)
+        std::size_t erasedIndex { eraseAtIndex(probeForKey(key)) };
+        if (erasedIndex != sentinelIndex) {
+            return 1;
+        }
+        return 0;
+    }
+
+    iterator erase(iterator pos) {
+        // Iterator must be valid and dereferenceable
+        std::size_t erasedIndex { eraseAtIndex(probeForKey(pos->first)) };
+        if (erasedIndex == sentinelIndex || erasedIndex == size()) {
+            return end();
+        }
+        std::size_t nextFilledIndex { probeForFilled(erasedIndex + 1) };
+        return { nextFilledIndex, this };
+    }
+
+    void clear() {
+        for (std::size_t i {}; i < m_buckets.size(); ++i) {
+            eraseAtIndex(i, true);
+        }
+        HM_ASSERT_VALID();
+    }
+
+    ////////////
+    // Lookup //
+    ////////////
+
     iterator find(const K& key) {
         std::size_t index { probeForKey(key) };
         if (index >= m_buckets.size()) {
@@ -371,24 +401,9 @@ public:
         return m_filled == 0;
     }
 
-    std::size_t erase(const K& key) {
-        // Returns the number of elements erased (0 or 1)
-        std::size_t erasedIndex { eraseAtIndex(probeForKey(key)) };
-        if (erasedIndex != sentinelIndex) {
-            return 1;
-        }
-        return 0;
-    }
-
-    iterator erase(iterator pos) {
-        // Iterator must be valid and dereferenceable
-        std::size_t erasedIndex { eraseAtIndex(probeForKey(pos->first)) };
-        if (erasedIndex == sentinelIndex || erasedIndex == size()) {
-            return end();
-        }
-        std::size_t nextFilledIndex { probeForFilled(erasedIndex + 1) };
-        return { nextFilledIndex, this };
-    }
+    /////////////
+    // Hashing //
+    /////////////
 
     // Exception guarantee:
     // Strong if type is copyable or nothrow movable
@@ -418,13 +433,6 @@ public:
     void reserve(std::size_t count) {
         float loadFactorMultiplier { 1.3f }; // This ensures that rehashing isn't necessary to hold `count` elements
         rehash(std::ceil(count * loadFactorMultiplier) + 1);
-    }
-
-    void clear() {
-        for (std::size_t i {}; i < m_buckets.size(); ++i) {
-            eraseAtIndex(i, true);
-        }
-        HM_ASSERT_VALID();
     }
 
 private:
