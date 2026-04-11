@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <random>
 #include <unordered_map>
+#include <string>
+#include <cctype>
 #include <systems_dsa/hash_map.hpp>
 
 class HashMapTest_F : public testing::Test {
@@ -216,7 +218,37 @@ TEST_F(HashMapTest_F, RangeBasedLoop) {
     }
 }
 
+TEST (HashMapTest, CorrectlyChecksEqualityWithKeyEqual) {
+    struct CaseInsensitiveEqual {
+        bool operator()(const std::string& lhs, const std::string& rhs) const {
+            if (lhs.length() != rhs.length()) return false;
 
+            for (std::size_t i {}; i < lhs.length(); ++i) {
+                if (std::tolower(lhs[i]) != std::tolower(rhs[i])) return false;
+            }
+            return true;
+        }
+    };
+
+    struct CaseInsensitiveHash {
+        std::size_t operator()(const std::string& str) const {
+            std::size_t hash = 0;
+            for (char c : str) {
+                hash = hash * 31 + std::tolower(c);
+            }
+            return hash;
+        }
+    };
+
+    systems_dsa::hash_map<std::string, int, CaseInsensitiveHash, CaseInsensitiveEqual> hashMap {};
+
+    hashMap.insert("abc", 1);
+    auto [ it, success] = hashMap.insert("ABC", 2);
+    EXPECT_FALSE(success);
+    EXPECT_EQ(it->second, 1);
+    EXPECT_TRUE(hashMap.contains("ABC"));
+    EXPECT_EQ(hashMap.erase("ABC"), 1);
+}
 
 /////////////////////////
 // Adversarial testing //
