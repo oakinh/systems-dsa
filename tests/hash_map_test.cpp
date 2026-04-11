@@ -254,11 +254,9 @@ TEST(HashMapTest, RandomSeqInsertEraseFindAgainstStd) {
             const auto it{ hashMap.find(key) };
             const auto refIt { reference.find(key) };
 
-            if (it == hashMap.end()) {
-                if (refIt != reference.end()) {
-                    FAIL();
-                }
-            } else {
+            if ((it == hashMap.end()) != (refIt == reference.end())) {
+                FAIL();
+            } else if (it != hashMap.end()) {
                 EXPECT_EQ(it->second, refIt->second);
             }
             EXPECT_EQ(hashMap.size(), reference.size());
@@ -298,11 +296,9 @@ TEST(HashMapTest, RandomSeqOperatorBracketsEraseFindAgainstStd) {
             const auto it{ hashMap.find(key) };
             const auto refIt { reference.find(key) };
 
-            if (it == hashMap.end()) {
-                if (refIt != reference.end()) {
-                    FAIL();
-                }
-            } else {
+            if ((it == hashMap.end()) != (refIt == reference.end())) {
+                FAIL();
+            } else if (it != hashMap.end()) {
                 EXPECT_EQ(it->second, refIt->second);
             }
             EXPECT_EQ(hashMap.size(), reference.size());
@@ -343,11 +339,9 @@ TEST(HashMapTest, RandomSeqEmplaceEraseFindAgainstStd) {
             const auto it{ hashMap.find(key) };
             const auto refIt { reference.find(key) };
 
-            if (it == hashMap.end()) {
-                if (refIt != reference.end()) {
-                    FAIL();
-                }
-            } else {
+            if ((it == hashMap.end()) != (refIt == reference.end())) {
+                FAIL();
+            } else if (it != hashMap.end()) {
                 EXPECT_EQ(it->second, refIt->second);
             }
             EXPECT_EQ(hashMap.size(), reference.size());
