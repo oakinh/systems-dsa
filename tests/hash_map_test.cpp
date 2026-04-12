@@ -259,6 +259,19 @@ TEST(HashMapTest, RehashPolicyEnforced) {
     EXPECT_GT(hashMap.bucket_count(), 10);
 }
 
+TEST(HashMapTest, DestructorDestroysElements) {
+    LifetimeTracker::resetCounts();
+    {
+        systems_dsa::hash_map<int, LifetimeTracker> hashMap;
+        for (std::size_t i{}; i < 5; ++i) {
+            hashMap.insert({ i, {} });
+        }
+        EXPECT_EQ(LifetimeTracker::liveCount, 5);
+    }
+    EXPECT_EQ(LifetimeTracker::liveCount, 0);
+    LifetimeTracker::resetCounts();
+}
+
 /////////////////////////
 // Adversarial testing //
 /////////////////////////
