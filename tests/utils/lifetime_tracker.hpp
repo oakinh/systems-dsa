@@ -31,23 +31,22 @@ public:
     }
 
     ~LifetimeTracker() {
+        assert(m_alive && "Destruction called on non-constructed object");
         ++dtorCount;
         --liveCount;
         m_alive = false;
-        if (liveCount == 0) resetCounts();
     }
 
-    LifetimeTracker(const LifetimeTracker& other)
-    : m_alive { other.m_alive } {
-        assert(m_alive && "Copied from class is not alive.\n");
+    LifetimeTracker(const LifetimeTracker& other) {
+        assert(other.m_alive && "Copied from class is not alive.");
+        m_alive = true;
         ++copyCtorCount;
         ++liveCount;
     }
 
-    LifetimeTracker(LifetimeTracker&& other) noexcept
-        : m_alive { other.m_alive } {
-        assert(other.m_alive && "Moved from class was not alive\n");
-        other.m_alive = false;
+    LifetimeTracker(LifetimeTracker&& other) noexcept {
+        assert(other.m_alive && "Moved from class was not alive.");
+        m_alive = true;
         ++moveCtorCount;
         ++liveCount;
     }
@@ -56,10 +55,10 @@ public:
         if (&other == this) {
             return *this;
         }
-        assert(other.m_alive && "Copy assigned from is not alive.\n");
+        assert(this->m_alive && "Copy assignment target is not alive");
+        assert(other.m_alive && "Copy assigned from is not alive.");
         ++copyAssignCount;
         m_alive = other.m_alive;
-
         return *this;
     }
 
@@ -67,11 +66,10 @@ public:
         if (&other == this) {
             return *this;
         }
-        assert(other.m_alive && "Move assigned from is not alive.\n");
+        assert(this->m_alive && "Move assignment target is not alive");
+        assert(other.m_alive && "Move assigned from is not alive.");
         ++moveAssignCount;
         m_alive = other.m_alive;
-
-        other.m_alive = false;
         return *this;
     }
 

@@ -254,6 +254,16 @@ private:
         return erasedIndex;
     }
 
+    void destroyElements(vector<Bucket>* bucketOverride = nullptr) {
+        auto& buckets { bucketOverride ? *bucketOverride : m_buckets };
+        for (std::size_t i {}; i < buckets.size(); ++i) {
+            Bucket& bucket { buckets[i] };
+            if (bucket.state == State::FILLED) {
+                bucket.ptr()->~value_type();
+            }
+        }
+    }
+
 public:
     // Default constructor
     hash_map() {
@@ -286,7 +296,9 @@ public:
     // Move assignment operator
     hash_map& operator=(hash_map&& other) noexcept = default;
 
-    ~hash_map() = default;
+    ~hash_map() {
+        destroyElements();
+    };
 
     ///////////////
     // Modifiers //
@@ -431,9 +443,7 @@ public:
             }
         } catch (...) {
             //for (const Bucket& newBucket : newBuckets) {
-            for (std::size_t i {}; i < newBuckets.size(); ++i) {
-                newBuckets[i].ptr()->~value_type();
-            }
+            destroyElements(&newBuckets);
             throw;
         }
         m_tombstones = 0;

@@ -3,6 +3,7 @@
 class ThrowsOnCopy {
     public:
     int id {};
+    bool m_alive = false;
     inline static int instanceCount = 0;
     inline static int throwOnInstance = 0;
     inline static int copyCtorCount = 0;
@@ -10,24 +11,29 @@ class ThrowsOnCopy {
 
     ThrowsOnCopy() {
         ++instanceCount;
+        m_alive = true;
     };
 
     explicit ThrowsOnCopy(int id)
         : id { id } {
         ++instanceCount;
+        m_alive = true;
     }
 
     ThrowsOnCopy(const ThrowsOnCopy& other) : id { other.id } {
+        assert(other.m_alive);
+        m_alive = true;
+
+        ++instanceCount;
+        ++copyCtorCount;
         if (throwOnInstance != 0 && (copyCtorCount == throwOnInstance)) {
             throw std::exception();
         }
-        ++instanceCount;
-        ++copyCtorCount;
     }
     ~ThrowsOnCopy() {
+        assert(m_alive && "Destructor called on non-alive object");
         ++dtorCount;
         --instanceCount;
-        if (instanceCount == 0) resetCounts();
     }
 
     ThrowsOnCopy(ThrowsOnCopy&& other) = delete;
