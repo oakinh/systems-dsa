@@ -121,7 +121,7 @@ private:
 
     std::size_t probeForKey(const K& key) const {
         std::size_t index { getKeyIndex(key) };
-        const auto& buckets { m_buckets};
+        const auto& buckets { m_buckets };
         const std::size_t bucketSize { buckets.size() };
         assert(bucketSize > 0 && "bucketSize not greater than 0 in probe");
 
@@ -189,7 +189,7 @@ private:
                 return i;
             }
         }
-        return m_buckets.size();
+        return m_buckets.size(); // end() index
     }
 
     template <typename vt>
@@ -277,6 +277,9 @@ public:
 
     // Constructor with size
     explicit hash_map(std::size_t n) {
+        if (n == 0) {
+            throw std::invalid_argument("A hash_map must be initialized with a value of at least 1");
+        }
         m_buckets.resize(n);
         for (std::size_t i {}; i < n; ++i) {
             assert(m_buckets[i].state == State::OPEN && "Default initialized bucket(s) were not OPEN");
@@ -347,10 +350,8 @@ public:
 
     iterator erase(iterator pos) {
         // Iterator must be valid and dereferenceable
-        std::size_t erasedIndex { eraseAtIndex(probeForKey(pos->first)) };
-        if (erasedIndex == sentinelIndex || erasedIndex == size()) {
-            return end();
-        }
+        std::size_t erasedIndex { eraseAtIndex(pos.m_currentIndex) };
+
         std::size_t nextFilledIndex { probeForFilled(erasedIndex + 1) };
         return { nextFilledIndex, this };
     }
@@ -432,6 +433,7 @@ public:
     // Strong if type is copyable or nothrow movable
     // Otherwise basic only
     void rehash(std::size_t count) {
+        if (count <= bucket_count()) return;
         vector<Bucket> newBuckets {};
         newBuckets.resize(count);
         try {
@@ -452,8 +454,9 @@ public:
     }
 
     void reserve(std::size_t count) {
-        float loadFactorMultiplier { 1.3f }; // This ensures that rehashing isn't necessary to hold `count` elements
-        rehash(std::ceil(count * loadFactorMultiplier) + 1);
+        // This ensures that rehashing isn't necessary to hold `count` elements
+        if (count <= bucket_count()) return; // No op
+        rehash(std::ceil(count / max_load_factor()));
     }
 
     float load_factor() const {
@@ -533,6 +536,7 @@ private:
 
         template <bool>
         friend class iterator_impl;
+        friend class hash_map;
     };
 
 public:

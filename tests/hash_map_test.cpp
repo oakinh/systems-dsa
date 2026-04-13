@@ -108,6 +108,7 @@ TEST(HashMapTest, EraseReturnsZeroOnNonExistentKey) {
     EXPECT_EQ(hashMap.erase(20), 0);
     EXPECT_EQ(LifetimeTracker::dtorCount, oldDtorCount);
     EXPECT_FALSE(hashMap.contains(20));
+    LifetimeTracker::resetCounts();
 }
 
 TEST_F(HashMapTest_F, RehashLosesNoElements) {
@@ -130,6 +131,19 @@ TEST_F(HashMapTest_F, ElementsIntactPostReserve) {
     std::size_t hashMapSize { hashMap.size() };
     hashMap.reserve(30);
     EXPECT_EQ(hashMap.size(), hashMapSize);
+    for (const auto& pair : pairs) {
+        EXPECT_EQ(pair.second, hashMap.find(pair.first)->second);
+    }
+}
+
+TEST(HashMapTest, ReservedMapAllowsCountElementsWithoutRehash) {
+    systems_dsa::hash_map<int, LifetimeTracker> hashMap {};
+    hashMap.reserve(100);
+    std::size_t bucketCount { hashMap.bucket_count() };
+    for (std::size_t i {}; i < 100; ++i) {
+        hashMap.insert({ i, {} });
+    }
+    EXPECT_EQ(bucketCount, hashMap.bucket_count()) << "Reserve didn't guarantee the map could hold N elements without a rehash";
 }
 
 TEST(HashMapTest, ContainerUnmodifiedAfterReserveException) {
@@ -270,6 +284,23 @@ TEST(HashMapTest, DestructorDestroysElements) {
     }
     EXPECT_EQ(LifetimeTracker::liveCount, 0);
     LifetimeTracker::resetCounts();
+}
+
+TEST_F(HashMapTest_F, ReserveDoesntAllowShrinking) {
+    std::size_t bucketCount { hashMap.bucket_count() };
+    hashMap.reserve(1);
+    EXPECT_EQ(bucketCount, hashMap.bucket_count());
+}
+
+TEST_F(HashMapTest_F, RehashDoesntAllowShrinking) {
+    std::size_t bucketCount { hashMap.bucket_count() };
+    hashMap.rehash(1);
+    EXPECT_EQ(bucketCount, hashMap.bucket_count());
+}
+
+TEST(HashMapTest, ConstructorWithZeroThrows) {
+    using hash_map = systems_dsa::hash_map<int, int>;
+    EXPECT_ANY_THROW(hash_map hashMap{0 });
 }
 
 /////////////////////////
