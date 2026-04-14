@@ -114,9 +114,9 @@ private:
     std::size_t getKeyIndex(const K& key, const vector<Bucket>* bucketOverride = nullptr) const {
         const auto& buckets { bucketOverride ? *bucketOverride : m_buckets };
         std::size_t hashedKey { m_hasher(key) };
-        return hashedKey > 0
-            ? hashedKey % buckets.size()
-            : 0;
+        assert(buckets.size() > 0);
+
+        return hashedKey % buckets.size();
     }
 
     std::size_t probeForKey(const K& key) const {
@@ -157,15 +157,14 @@ private:
             assert(index < bucketSize && "Index in probe not less than bucketSize");
             auto& bucket = buckets[index];
             State state = bucket.state;
-            if (state == State::TOMBSTONE) {
+            if (state == State::TOMBSTONE && tombstoneIndex == sentinelIndex) {
                 // We found a bucket suitable for insertion
                 // We continue until an open bucket to ensure there's no duplicate keys
                 tombstoneIndex = index;
             } else if (state == State::OPEN) {
                 // We always stop probing on an OPEN bucket
                 break;
-            } else if (m_eq(bucket.key(), key)) {
-                assert (state == State::FILLED);
+            } else if (state == State::FILLED && m_eq(bucket.key(), key)) {
                 // Key already exists, no op
                 failure = true;
                 break;
@@ -173,7 +172,7 @@ private:
         }
 
         if (tombstoneIndex != sentinelIndex) {
-            // Provide the last found tombstone for insertion if found
+            // Provide the first found tombstone for insertion if found
             index = tombstoneIndex;
         }
 
