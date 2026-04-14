@@ -250,7 +250,9 @@ private:
                 --m_tombstones;
             }
         }
-        HM_ASSERT_VALID();
+#ifndef NDEBUG
+        if (!clear) HM_ASSERT_VALID();
+#endif
         return erasedIndex;
     }
 
@@ -260,6 +262,10 @@ private:
             Bucket& bucket { buckets[i] };
             if (bucket.state == State::FILLED) {
                 bucket.ptr()->~value_type();
+                bucket.state = State::OPEN;
+                if (!bucketOverride) {
+                    --m_filled;
+                }
             }
         }
     }
@@ -434,6 +440,8 @@ public:
     // Otherwise basic only
     void rehash(std::size_t count) {
         if (count <= bucket_count()) return;
+        std::size_t oldFilled { m_filled };
+        std::cout << "m_filled pre rehash: " << m_filled << '\n';
         vector<Bucket> newBuckets {};
         newBuckets.resize(count);
         try {
@@ -448,12 +456,14 @@ public:
             throw;
         }
 
-        auto* oldBuckets { &m_buckets };
 
+        auto oldBuckets { std::move(m_buckets) };
         m_buckets = std::move(newBuckets);
         m_tombstones = 0;
 
-        destroyElements(oldBuckets);
+        destroyElements(&oldBuckets);
+        std::cout << "m_filled post rehash: " << m_filled << '\n';
+        assert(oldFilled == m_filled);
         HM_ASSERT_VALID();
     }
 
@@ -600,7 +610,13 @@ private:
             }
         }
         assert(tombstones == m_tombstones && "Tombstone count has drifted");
-        assert(filled == m_filled && "Filled count has drifted");
+        if (filled != m_filled) {
+            std::cerr << "filled: " << filled << '\n';
+            std::cerr << "m_filled: " << m_filled << '\n';
+            throw std::logic_error("Filled count has drifted");
+            assert(filled == m_filled && "Filled count has drifted");
+        }
+
         assert(open == m_buckets.size() - m_filled - m_tombstones && "Open count has drifted");
         assert(open > 0 && "Open count was not greater than zero");
         assert(getLoadFactor() == static_cast<double>(filled + tombstones) / m_buckets.size() && "Load factor calculation is incorrect");
