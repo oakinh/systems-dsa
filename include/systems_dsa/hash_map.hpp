@@ -329,12 +329,6 @@ public:
     }
 
     // TODO: Implement piecewise-style emplacement
-    // template <typename... Args>
-    // requires std::constructible_from<value_type, Args&&...>
-    // void emplace(Args&&... args) {
-    //     insert_impl(std::forward<Args>(args)...);
-    // }
-
     template <typename KArg, typename VArg>
     requires std::constructible_from<K, KArg&&> &&
         std::constructible_from<V, VArg&&>
