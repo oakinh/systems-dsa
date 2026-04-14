@@ -95,13 +95,13 @@ struct Bucket {
 - Effects: Inserts an element into the underlying array, using hashing protocol and linear probing to determine placement. Fails on an exception. Calls rehash() if load factor exceeds the threshold.
 - Complexity: O(1) amortized best case, O(n) worst case
 - Exceptions / guarantee: Strong if type is copyable or nothrow movable, otherwise basic only
-- Notes: No-ops if the key provided is already in the hash_map
+- Notes: No-ops if the key provided is already in the unordered_map
 #### emplace
 - Return value: void
 - Effects: Inserts an element into the underlying array, using hashing protocol and linear probing to determine placement. Fails on an exception. Calls rehash() if load factor exceeds the threshold.
 - Complexity: O(1) amortized best case, O(n) worst case
 - Exceptions / guarantee: Strong if type is copyable or nothrow movable, otherwise basic only
-- Notes: Currently doesn't do real piecewise emplacement. No-ops if the key provided is already in the hash_map
+- Notes: Currently doesn't do real piecewise emplacement. No-ops if the key provided is already in the unordered_map
 #### erase
 - Return value: std::size_t indicating the number of erased elements
 - Effects: Erases the element based on the key or index passed to it. If erased, marks the element as a tombstone.
@@ -134,7 +134,7 @@ struct Bucket {
 ### Hash policy
 #### reserve
 - Return value: void
-- Effects: Rehashes the container, increasing the bucket count such that `count` elements can be held in the hash_map **without** having to rehash again.
+- Effects: Rehashes the container, increasing the bucket count such that `count` elements can be held in the unordered_map **without** having to rehash again.
 - Complexity: O(n)
 - Exceptions / guarantee: If the type is copyable or no-throw movable, strong guarantee, otherwise basic only.
 ## Growth / rehash rules
@@ -160,12 +160,12 @@ Dereferenceable iterator:
 ### Storage
 - Stores: 
   - `std::size_t currentIndex`
-  - `hash_map* owner`
+  - `unordered_map* owner`
 ### begin()
 - Returns: first `FILLED` bucket
 - Otherwise, `begin() == end()`
 ### end()
-- Represented as: capacity of hash_map (`vector.size()`)
+- Represented as: capacity of unordered_map (`vector.size()`)
 ### operator*
 - Dereference is valid only for dereferenceable iterators
   - Meaning the current position is a `FILLED` bucket

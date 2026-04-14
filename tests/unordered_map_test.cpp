@@ -7,11 +7,11 @@
 #include <unordered_map>
 #include <string>
 #include <cctype>
-#include <systems_dsa/hash_map.hpp>
+#include <systems_dsa/unordered_map.hpp>
 
 class HashMapTest_F : public testing::Test {
 protected:
-    systems_dsa::hash_map<int, std::size_t> hashMap {};
+    systems_dsa::unordered_map<int, std::size_t> hashMap {};
     std::vector<std::pair<int, std::size_t>> pairs {
                 { 1, 101 },
                 { 3, 103 },
@@ -28,7 +28,7 @@ protected:
 
 class HashMapTest_LT_F : public testing::Test {
 protected:
-    systems_dsa::hash_map<int, LifetimeTracker> hashMap {};
+    systems_dsa::unordered_map<int, LifetimeTracker> hashMap {};
     std::vector<std::pair<int, LifetimeTracker>> pairs {
                     { 1, {} },
                     { 3, {} },
@@ -55,17 +55,17 @@ protected:
 ///////////////////////////////
 
 TEST(HashMapTest, IsEmptyInitially) {
-    systems_dsa::hash_map<std::string, int> hashMap {};
+    systems_dsa::unordered_map<std::string, int> hashMap {};
     EXPECT_EQ(hashMap.size(), 0);
 }
 
 TEST(HashMapTest, SizeConstructs) {
-    systems_dsa::hash_map<int, int> hashMap { 10 };
+    systems_dsa::unordered_map<int, int> hashMap { 10 };
     EXPECT_NO_FATAL_FAILURE();
 }
 
 TEST(HashMapTest, InsertAcceptsEither1Or2Args) {
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
     hashMap.insert(10, 1001);
     hashMap.insert({23, 100});
     EXPECT_EQ(hashMap.size(), 2) << "hashMap size should equal the number of pairs inserted";
@@ -73,7 +73,7 @@ TEST(HashMapTest, InsertAcceptsEither1Or2Args) {
 }
 
 TEST(HashMapTest, InsertReturnsValidIterator) {
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
     auto insertReturn { hashMap.insert({ 1, 10 }) };
     EXPECT_EQ(hashMap.find(insertReturn.first->first), insertReturn.first);
 }
@@ -100,14 +100,14 @@ TEST_F(HashMapTest_F, ContainsReturnsCorrectBool) {
 }
 
 TEST(HashMapTest, EmptyReturnsCorrectBool) {
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
     EXPECT_EQ(hashMap.empty(), true);
     hashMap.insert(10, 10);
     EXPECT_EQ(hashMap.empty(), false);
 }
 
 TEST(HashMapTest, EraseDestroysElement) {
-    systems_dsa::hash_map<int, LifetimeTracker> hashMap {};
+    systems_dsa::unordered_map<int, LifetimeTracker> hashMap {};
     LifetimeTracker::resetCounts();
     hashMap.insert(10, {});
     hashMap.insert(11, {});
@@ -121,7 +121,7 @@ TEST(HashMapTest, EraseDestroysElement) {
 }
 
 TEST(HashMapTest, EraseReturnsZeroOnNonExistentKey) {
-    systems_dsa::hash_map<int, LifetimeTracker> hashMap{};
+    systems_dsa::unordered_map<int, LifetimeTracker> hashMap{};
     LifetimeTracker::resetCounts();
     hashMap.insert(10, {});
     hashMap.insert(11, {});
@@ -155,7 +155,7 @@ TEST_F(HashMapTest_LT_F, ClearDestroysAllElements) {
 }
 
 TEST(HashMapTest, ExceptionDuringRehashPreservesContainer) {
-    systems_dsa::hash_map<int, ThrowsOnCopy> hashMap {};
+    systems_dsa::unordered_map<int, ThrowsOnCopy> hashMap {};
     ThrowsOnCopy::resetCounts();
     hashMap.reserve(6);
     for (int i {}; i < 6; ++i) {
@@ -185,7 +185,7 @@ TEST_F(HashMapTest_F, ElementsIntactPostReserve) {
 }
 
 TEST(HashMapTest, ReservedMapAllowsCountElementsWithoutRehash) {
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
     hashMap.reserve(100);
     std::size_t bucketCount { hashMap.bucket_count() };
     for (std::size_t i {}; i < 100; ++i) {
@@ -196,7 +196,7 @@ TEST(HashMapTest, ReservedMapAllowsCountElementsWithoutRehash) {
 }
 
 TEST(HashMapTest, ContainerUnmodifiedAfterReserveException) {
-    systems_dsa::hash_map<std::size_t, ThrowsOnCopy> hashMap { 10 };
+    systems_dsa::unordered_map<std::size_t, ThrowsOnCopy> hashMap { 10 };
     ThrowsOnCopy::resetCounts();
     ThrowsOnCopy::throwOnInstance = 9;
 
@@ -219,7 +219,7 @@ TEST(HashMapTest, ContainerUnmodifiedAfterReserveException) {
 }
 
 TEST(HashMapTest, ContainerUnmodifiedAfterInsertException) {
-    systems_dsa::hash_map<std::size_t, ThrowsOnCopy> hashMap { 10 };
+    systems_dsa::unordered_map<std::size_t, ThrowsOnCopy> hashMap { 10 };
     ThrowsOnCopy::resetCounts();
     ThrowsOnCopy::throwOnInstance = 7;
 
@@ -303,7 +303,7 @@ TEST (HashMapTest, CorrectlyChecksEqualityWithKeyEqual) {
         }
     };
 
-    systems_dsa::hash_map<std::string, int, CaseInsensitiveHash, CaseInsensitiveEqual> hashMap {};
+    systems_dsa::unordered_map<std::string, int, CaseInsensitiveHash, CaseInsensitiveEqual> hashMap {};
 
     hashMap.insert("abc", 1);
     auto [ it, success] = hashMap.insert("ABC", 2);
@@ -314,7 +314,7 @@ TEST (HashMapTest, CorrectlyChecksEqualityWithKeyEqual) {
 }
 
 TEST(HashMapTest, GrowthPolicyEnforced) {
-    systems_dsa::hash_map<int, int> hashMap { 10 };
+    systems_dsa::unordered_map<int, int> hashMap { 10 };
 
     EXPECT_EQ(hashMap.bucket_count(), 10);
 
@@ -334,7 +334,7 @@ TEST_F(HashMapTest_LT_F, RehashDestroysOldElements) {
 TEST(HashMapTest, DestructorDestroysElements) {
     LifetimeTracker::resetCounts();
     {
-        systems_dsa::hash_map<int, LifetimeTracker> hashMap;
+        systems_dsa::unordered_map<int, LifetimeTracker> hashMap;
         for (std::size_t i{}; i < 5; ++i) {
             hashMap.insert({ i, {} });
         }
@@ -357,8 +357,8 @@ TEST_F(HashMapTest_F, RehashDoesntAllowShrinking) {
 }
 
 TEST(HashMapTest, ConstructorWithZeroThrows) {
-    using hash_map = systems_dsa::hash_map<int, int>;
-    EXPECT_ANY_THROW(hash_map hashMap{0 });
+    using unordered_map = systems_dsa::unordered_map<int, int>;
+    EXPECT_ANY_THROW(unordered_map hashMap{0 });
 }
 
 /////////////////////////
@@ -377,7 +377,7 @@ TEST(HashMapTest, RandomSeqInsertEraseFindAgainstStd) {
     std::uniform_int_distribution<int> distKeyVal(1, 1000);
     std::uniform_int_distribution<int> distOp(0, 2);
 
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
     std::unordered_map<int, int> reference {};
 
     for (std::size_t i {}; i < 10'000; ++i) {
@@ -419,7 +419,7 @@ TEST(HashMapTest, RandomSeqOperatorBracketsEraseFindAgainstStd) {
     std::uniform_int_distribution<int> distKeyVal(1, 40);
     std::uniform_int_distribution<int> distOp(0, 2);
 
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
     std::unordered_map<int, int> reference {};
 
     for (std::size_t i {}; i < 1000; ++i) {
@@ -462,7 +462,7 @@ TEST(HashMapTest, RandomSeqEmplaceEraseFindAgainstStd) {
     std::uniform_int_distribution<int> distKeyVal(1, 1000);
     std::uniform_int_distribution<int> distOp(0, 2);
 
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
     std::unordered_map<int, int> reference {};
 
     for (std::size_t i {}; i < 10'000; ++i) {
@@ -494,7 +494,7 @@ TEST(HashMapTest, RandomSeqEmplaceEraseFindAgainstStd) {
 }
 
 TEST(HashMapTest, HeavyTombstoneAccumulation) {
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
     std::size_t expectedFinalSize { 100 };
     for (int i {}; i < 10; ++i) {
         for (int k {}; k < static_cast<int>(hashMap.size()); ++k) {
@@ -508,7 +508,7 @@ TEST(HashMapTest, HeavyTombstoneAccumulation) {
 }
 
 TEST(HashMapTest, HeavyRepeatedClearing) {
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
     std::size_t expectedFinalSize { 100 };
     for (int i {}; i < 10; ++i) {
         hashMap.erase(1); // Erase to ensure tombstones are also properly cleared
@@ -524,7 +524,7 @@ TEST(HashMapTest, HeavyRepeatedClearing) {
 }
 
 TEST(HashMapTest, HeavyRehashing) {
-    systems_dsa::hash_map<int, int> hashMap {};
+    systems_dsa::unordered_map<int, int> hashMap {};
 
     for (int i {}; i < 1000; ++i) {
         hashMap.insert({ i, i + 10 });
@@ -542,7 +542,7 @@ TEST(HashMapTest, EverythingCollides) {
         }
     };
 
-    systems_dsa::hash_map<int, int, ConstantHasher> hashMap {};
+    systems_dsa::unordered_map<int, int, ConstantHasher> hashMap {};
 
     for (int i {}; i < 20; ++i) {
         hashMap.insert({ i, i + 10 });
@@ -562,7 +562,7 @@ TEST(HashMapTest, IteratorTraversalWithTombstonesAndOpen) {
             return key;
         }
     };
-    systems_dsa::hash_map<int, int, IntHasher> hashMap {};
+    systems_dsa::unordered_map<int, int, IntHasher> hashMap {};
 
     for (int i {}; i < 10; ++i) {
         if (i == 7) continue;
