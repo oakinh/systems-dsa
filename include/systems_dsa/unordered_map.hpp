@@ -435,7 +435,7 @@ public:
     // Otherwise basic only
     void rehash(std::size_t count) {
         if (count <= bucket_count()) return;
-        std::size_t oldFilled { m_filled };
+        std::size_t oldFilled [[maybe_unused]] { m_filled };
         std::cout << "m_filled pre rehash: " << m_filled << '\n';
         vector<Bucket> newBuckets {};
         newBuckets.resize(count);
