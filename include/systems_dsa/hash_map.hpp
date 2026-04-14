@@ -444,12 +444,16 @@ public:
                 }
             }
         } catch (...) {
-            //for (const Bucket& newBucket : newBuckets) {
             destroyElements(&newBuckets);
             throw;
         }
-        m_tombstones = 0;
+
+        auto* oldBuckets { &m_buckets };
+
         m_buckets = std::move(newBuckets);
+        m_tombstones = 0;
+
+        destroyElements(oldBuckets);
         HM_ASSERT_VALID();
     }
 
@@ -588,7 +592,7 @@ private:
                 assert(false && "Unreachable code reached in assert valid switch statement - bucket.state default case");
             }
             if (bucket.state == State::FILLED) {
-                auto foundIterator { find(bucket.key()) };
+                const auto& foundIterator { find(bucket.key()) };
                 assert(foundIterator != end() && "end iterator returned when attempting to find valid key");
                 if (!(&foundIterator->second == &bucket.val())) {
                     assert(false && "valFound did not equal expected value");

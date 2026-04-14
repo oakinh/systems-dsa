@@ -30,14 +30,17 @@ class ThrowsOnCopy {
             throw std::exception();
         }
     }
+
     ~ThrowsOnCopy() {
         assert(m_alive && "Destructor called on non-alive object");
+        m_alive = false;
         ++dtorCount;
         --instanceCount;
     }
 
     ThrowsOnCopy(ThrowsOnCopy&& other) = delete;
     ThrowsOnCopy& operator=(ThrowsOnCopy&& other) = delete;
+    ThrowsOnCopy& operator=(const ThrowsOnCopy& other) = delete;
 
     static void resetCounts() {
         instanceCount = 0;
