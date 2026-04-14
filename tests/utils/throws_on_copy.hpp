@@ -22,13 +22,12 @@ class ThrowsOnCopy {
 
     ThrowsOnCopy(const ThrowsOnCopy& other) : id { other.id } {
         assert(other.m_alive);
-        m_alive = true;
-
-        ++instanceCount;
         ++copyCtorCount;
         if (throwOnInstance != 0 && (copyCtorCount == throwOnInstance)) {
             throw std::exception();
         }
+        m_alive = true;
+        ++instanceCount;
     }
 
     ~ThrowsOnCopy() {

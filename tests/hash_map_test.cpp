@@ -155,18 +155,22 @@ TEST_F(HashMapTest_LT_F, ClearDestroysAllElements) {
 }
 
 TEST(HashMapTest, ExceptionDuringRehashPreservesContainer) {
-    ThrowsOnCopy::resetCounts();
-    ThrowsOnCopy::throwOnInstance = 15;
     systems_dsa::hash_map<int, ThrowsOnCopy> hashMap {};
+    ThrowsOnCopy::resetCounts();
     hashMap.reserve(6);
     for (int i {}; i < 6; ++i) {
         hashMap.insert({ i, {} });
     }
 
-    ASSERT_EQ(ThrowsOnCopy::copyCtorCount, 12);
-    ASSERT_EQ(ThrowsOnCopy::dtorCount, 6);
+    int oldCopyCtorCount { ThrowsOnCopy::copyCtorCount };
+    int oldDtorCount { ThrowsOnCopy::dtorCount };
+
+    ThrowsOnCopy::throwOnInstance = oldCopyCtorCount + 4;
+
     EXPECT_ANY_THROW(hashMap.rehash(12));
-    EXPECT_EQ(ThrowsOnCopy::dtorCount, 9);
+    EXPECT_EQ(ThrowsOnCopy::dtorCount, oldDtorCount + 3) << "Exception during rehash didn't destroy newly constructed elements";
+    EXPECT_EQ(ThrowsOnCopy::instanceCount, 6) << "Exception during rehash didn't preserve elements";
+    EXPECT_EQ(hashMap.size(), 6);
 
     ThrowsOnCopy::resetCounts();
 }
