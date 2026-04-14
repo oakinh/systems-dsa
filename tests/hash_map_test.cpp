@@ -26,6 +26,28 @@ protected:
     }
 };
 
+class HashMapTest_LT_F : public testing::Test {
+protected:
+    systems_dsa::hash_map<int, LifetimeTracker> hashMap {};
+    std::vector<std::pair<int, LifetimeTracker>> pairs {
+                    { 1, {} },
+                    { 3, {} },
+                    { 7, {} },
+                    { 10, {} },
+                    { 2, {} },
+                    { 12, {} },
+                    { 13, {} },
+                    { 17, {} },
+                    { 110, {} },
+                    { 19, {} },
+                };
+    HashMapTest_LT_F() {
+        for (const auto& pair : pairs) {
+            hashMap.insert(pair);
+        }
+    }
+};
+
 
 
 ///////////////////////////////
@@ -119,12 +141,34 @@ TEST_F(HashMapTest_F, RehashLosesNoElements) {
     }
 }
 
-TEST_F(HashMapTest_F, ClearRemovesAllElements) {
+TEST_F(HashMapTest_LT_F, ClearDestroysAllElements) {
+    LifetimeTracker::resetCounts();
+    EXPECT_EQ(LifetimeTracker::dtorCount, 0);
+    hashMap.erase(pairs[2].first);
     hashMap.clear();
+    EXPECT_EQ(LifetimeTracker::dtorCount, pairs.size());
     EXPECT_EQ(hashMap.size(), 0);
     for (const auto& p : pairs) {
         EXPECT_FALSE(hashMap.contains(p.first));
     }
+    LifetimeTracker::resetCounts();
+}
+
+TEST(HashMapTest, ExceptionDuringRehashPreservesContainer) {
+    ThrowsOnCopy::resetCounts();
+    ThrowsOnCopy::throwOnInstance = 15;
+    systems_dsa::hash_map<int, ThrowsOnCopy> hashMap {};
+    hashMap.reserve(6);
+    for (int i {}; i < 6; ++i) {
+        hashMap.insert({ i, {} });
+    }
+
+    ASSERT_EQ(ThrowsOnCopy::copyCtorCount, 12);
+    ASSERT_EQ(ThrowsOnCopy::dtorCount, 6);
+    EXPECT_ANY_THROW(hashMap.rehash(12));
+    EXPECT_EQ(ThrowsOnCopy::dtorCount, 9);
+
+    ThrowsOnCopy::resetCounts();
 }
 
 TEST_F(HashMapTest_F, ElementsIntactPostReserve) {
@@ -137,13 +181,14 @@ TEST_F(HashMapTest_F, ElementsIntactPostReserve) {
 }
 
 TEST(HashMapTest, ReservedMapAllowsCountElementsWithoutRehash) {
-    systems_dsa::hash_map<int, LifetimeTracker> hashMap {};
+    systems_dsa::hash_map<int, int> hashMap {};
     hashMap.reserve(100);
     std::size_t bucketCount { hashMap.bucket_count() };
     for (std::size_t i {}; i < 100; ++i) {
         hashMap.insert({ i, {} });
     }
     EXPECT_EQ(bucketCount, hashMap.bucket_count()) << "Reserve didn't guarantee the map could hold N elements without a rehash";
+
 }
 
 TEST(HashMapTest, ContainerUnmodifiedAfterReserveException) {
@@ -264,13 +309,22 @@ TEST (HashMapTest, CorrectlyChecksEqualityWithKeyEqual) {
     EXPECT_EQ(hashMap.erase("ABC"), 1);
 }
 
-TEST(HashMapTest, RehashPolicyEnforced) {
+TEST(HashMapTest, GrowthPolicyEnforced) {
     systems_dsa::hash_map<int, int> hashMap { 10 };
+
     EXPECT_EQ(hashMap.bucket_count(), 10);
+
     for (std::size_t i{}; i < 7; ++i) {
-        hashMap.insert({ i, i + 10 });
+        hashMap.insert({ i, {} });
     }
     EXPECT_GT(hashMap.bucket_count(), 10);
+}
+
+TEST_F(HashMapTest_LT_F, RehashDestroysOldElements) {
+    LifetimeTracker::resetCounts();
+    hashMap.rehash(hashMap.bucket_count() + 20);
+    EXPECT_EQ(LifetimeTracker::dtorCount, hashMap.size());
+    LifetimeTracker::resetCounts();
 }
 
 TEST(HashMapTest, DestructorDestroysElements) {
