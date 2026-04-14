@@ -1,6 +1,6 @@
 #include <systems_dsa/vector.hpp>
 #include <iostream>
-#include <systems_dsa/hash_map.hpp>
+#include <systems_dsa/unordered_map.hpp>
 #include <vector>
 
 int main() {
@@ -27,7 +27,7 @@ int main() {
     //     myVec[1] = 22;
     //     myVec.resize(10);
 
-    systems_dsa::hash_map<int, int> hashMap { 4 };
+    systems_dsa::unordered_map<int, int> hashMap { 4 };
     std::vector<std::pair<int, int>> pairsToInsert {
                     { 201, 101 },
                     { 203, 103 },

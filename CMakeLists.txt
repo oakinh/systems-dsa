@@ -47,7 +47,7 @@ target_include_directories(systems_dsa
 # This is the key "CLion/Nova just works" move: files are in a target.
 target_sources(systems_dsa INTERFACE
         include/systems_dsa/vector.hpp
-        include/systems_dsa/hash_map.hpp
+        include/systems_dsa/unordered_map.hpp
 )
 
 # ------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ if(SYSTEMS_DSA_BUILD_TESTS AND BUILD_TESTING)
     # IMPORTANT: explicit file list (no GLOB) so IDE + CMake stay deterministic.
     set(SYSTEMS_DSA_TEST_SOURCES
             tests/vector_test.cpp
-            tests/hash_map_test.cpp
+            tests/unordered_map_test.cpp
     )
 
     # Include test helper headers too (helps CLion index them as part of the target).

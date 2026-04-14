@@ -34,13 +34,13 @@ template <
     >
 requires ValidHasher<Hasher, K> &&
     ValidKeyEqual<KeyEqual, K>
-class hash_map;
+class unordered_map;
 
 #ifndef NDEBUG
 // Forward declaration
 template <class K, class V, class Hash, class KeyEq>
 std::ostream& operator<<(std::ostream& out,
-                         const hash_map<K, V, Hash, KeyEq>& hashMap);
+                         const unordered_map<K, V, Hash, KeyEq>& hashMap);
 #endif
 
 // Start of class
@@ -52,7 +52,7 @@ template <
     >
 requires ValidHasher<Hasher, K> &&
     ValidKeyEqual<KeyEqual, K>
-class hash_map {
+class unordered_map {
     enum class State : uint8_t {
         OPEN,
         FILLED,
@@ -271,7 +271,7 @@ private:
 
 public:
     // Default constructor
-    hash_map() {
+    unordered_map() {
         m_buckets.resize(10);
         for (std::size_t i {}; i < 10; ++i) {
             assert(m_buckets[i].state == State::OPEN && "Default initialized bucket(s) were not OPEN");
@@ -281,9 +281,9 @@ public:
     }
 
     // Constructor with size
-    explicit hash_map(std::size_t n) {
+    explicit unordered_map(std::size_t n) {
         if (n == 0) {
-            throw std::invalid_argument("A hash_map must be initialized with a value of at least 1");
+            throw std::invalid_argument("A unordered_map must be initialized with a value of at least 1");
         }
         m_buckets.resize(n);
         for (std::size_t i {}; i < n; ++i) {
@@ -293,18 +293,18 @@ public:
     }
 
     // Copy constructor
-    hash_map(const hash_map& other) = delete;
+    unordered_map(const unordered_map& other) = delete;
 
     // Move constructor
-    hash_map(hash_map&& other) noexcept = default;
+    unordered_map(unordered_map&& other) noexcept = default;
 
     // Copy assignment operator
-    hash_map& operator=(const hash_map& other) = delete;
+    unordered_map& operator=(const unordered_map& other) = delete;
 
     // Move assignment operator
-    hash_map& operator=(hash_map&& other) noexcept = default;
+    unordered_map& operator=(unordered_map&& other) noexcept = default;
 
-    ~hash_map() {
+    ~unordered_map() {
         destroyElements();
     };
 
@@ -483,7 +483,7 @@ private:
     class iterator_impl {
         using reference = std::conditional_t<IsConst, const value_type&, value_type&>;
         using pointer = std::conditional_t<IsConst, const value_type*, value_type*>;
-        using owner_type = std::conditional_t<IsConst, const hash_map, hash_map>;
+        using owner_type = std::conditional_t<IsConst, const unordered_map, unordered_map>;
         using bucket_type = std::conditional_t<IsConst, const Bucket, Bucket>;
 
         std::size_t m_currentIndex = sentinelIndex;
@@ -543,7 +543,7 @@ private:
 
         template <bool>
         friend class iterator_impl;
-        friend class hash_map;
+        friend class unordered_map;
     };
 
 public:
@@ -573,7 +573,7 @@ public:
 
 #ifndef NDEBUG
 private:
-    // This function checks numerous invariants of our hash_map, to assert that it is in a valid state.
+    // This function checks numerous invariants of our unordered_map, to assert that it is in a valid state.
     // We do this regardless of runtime overhead, in debug builds only.
     void assertValid() const {
         std::size_t tombstones {};
@@ -618,20 +618,20 @@ private:
 
 public:
     template <class K2, class V2, class H2, class E2>
-    friend std::ostream& operator<< (std::ostream&, const hash_map<K2, V2, H2, E2>&);
+    friend std::ostream& operator<< (std::ostream&, const unordered_map<K2, V2, H2, E2>&);
 #endif
 };
 
 #ifndef NDEBUG
 template <class K, class V, class Hash, class KeyEq>
 std::ostream& operator<< (std::ostream& out,
-    const hash_map<K, V, Hash, KeyEq>& hashMap) {
+    const unordered_map<K, V, Hash, KeyEq>& hashMap) {
     out << "[";
     for (std::size_t i {}; i < hashMap.m_buckets.size(); ++i) {
         if (i) out << ", ";
         out << i << ": ";
         const auto& bucket { hashMap.m_buckets[i] };
-        if (bucket.state == hash_map<K, V, Hash, KeyEq>::State::FILLED) {
+        if (bucket.state == unordered_map<K, V, Hash, KeyEq>::State::FILLED) {
             out << "{ " << bucket.key() << ", " << bucket.val() << " }";
         } else {
             out << "empty";
