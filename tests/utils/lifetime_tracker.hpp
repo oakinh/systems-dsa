@@ -37,14 +37,14 @@ public:
         m_alive = false;
     }
 
-    LifetimeTracker(const LifetimeTracker& other) {
+    LifetimeTracker(const LifetimeTracker& other [[maybe_unused]]) {
         assert(other.m_alive && "Copied from class is not alive.");
         m_alive = true;
         ++copyCtorCount;
         ++liveCount;
     }
 
-    LifetimeTracker(LifetimeTracker&& other) noexcept {
+    LifetimeTracker(LifetimeTracker&& other [[maybe_unused]]) noexcept {
         assert(other.m_alive && "Moved from class was not alive.");
         m_alive = true;
         ++moveCtorCount;

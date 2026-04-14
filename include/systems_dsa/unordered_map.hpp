@@ -296,12 +296,14 @@ public:
     unordered_map(const unordered_map& other) = delete;
 
     // Move constructor
+    // TODO: Define proper move-constructor
     unordered_map(unordered_map&& other) noexcept = default;
 
     // Copy assignment operator
     unordered_map& operator=(const unordered_map& other) = delete;
 
     // Move assignment operator
+    // TODO: Define proper move assignment operator
     unordered_map& operator=(unordered_map&& other) noexcept = default;
 
     ~unordered_map() {
@@ -505,6 +507,7 @@ private:
         }
 
         reference operator*() const {
+            assert(m_owner && "m_owner is a nullptr");
             assert(m_currentIndex != m_owner->m_buckets.size() && "Attempted to dereference an end iterator");
             bucket_type& bucket { m_owner->m_buckets[m_currentIndex] };
             assert(bucket.state == State::FILLED && "Attempted to dereference a non-FILLED iterator");
