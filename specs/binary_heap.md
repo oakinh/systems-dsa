@@ -41,9 +41,11 @@ class binary_heap {
 #### empty
 - Returns a bool, specifically `true` if the container holds no elements, `false` otherwise
 - Complexity: O(1)
+- Exception safety: Non-throwing
 #### size
 - Returns a size_type of the number of elements held in the container
 - Complexity: O(1)
+- Exception safety: Non-throwing
 ### Modifiers
 #### push
 - Returns void
@@ -51,22 +53,26 @@ class binary_heap {
   - Ordering continually checks the inserted element against its parent until the order property is achieved.
 - Duplicates are allowed
 - Complexity: O(log n). May cause container reallocation, spiking latency.
+- Exception safety: Strong guarantee
 #### emplace
 - Returns void
 - Constructs the element in-place at the end of the heap and order the container according to the comparator and order property.
   - Ordering continually checks the inserted element against its parent until the order property is achieved.
 - Complexity: O(log n). May cause container reallocation, spiking latency.
+- Exception safety: Strong guarantee
 #### pop
 - Returns void
 - Effect: Removes the element at index 0 (the element that would have been returned by top()) and orders the container
   - Moves the last element to index 0, and then bubbles down, comparing the priority child continually, until the order property is satisfied.
 - Requires: `!empty()`
 - Complexity: O(log n)
+- Exception safety: Non-throwing
 ### Lookup
 #### top
 - Returns a reference to the top element (index 0)
 - Requires: `!empty()`
 - Complexity: O(1)
+- Exception safety: Non-throwing
 
 ## Non-goals
 - STL templated Container feature parity
