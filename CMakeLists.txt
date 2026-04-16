@@ -48,6 +48,7 @@ target_include_directories(systems_dsa
 target_sources(systems_dsa INTERFACE
         include/systems_dsa/vector.hpp
         include/systems_dsa/unordered_map.hpp
+        include/systems_dsa/binary_heap.hpp
 )
 
 # ------------------------------------------------------------------------------
@@ -105,6 +106,7 @@ if(SYSTEMS_DSA_BUILD_TESTS AND BUILD_TESTING)
     set(SYSTEMS_DSA_TEST_SOURCES
             tests/vector_test.cpp
             tests/unordered_map_test.cpp
+            tests/binary_heap_test.cpp
     )
 
     # Include test helper headers too (helps CLion index them as part of the target).
