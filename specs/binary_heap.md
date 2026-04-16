@@ -3,10 +3,6 @@
 A complete binary tree that's implemented as a contiguous array that satisfies the heap invariant ordering rule.
 Ordering is done according to the Comparator template argument passed in.
 
-## Notes:
-- The structure is not stable
-- Equal-priority elements will come out of the container in any relative order
-
 ## Terminology
 - size_type: an alias for std::size_t
 - value_type: The value type of the elements held, T
@@ -26,6 +22,7 @@ class binary_heap {
 ## Invariants
 - Structure property:
     - Every level in the tree is filled, with the exception of the last level possibly not being filled.
+      - Elements occupy indices [0, size()], no uninitialized or inactive slots exist within this range
     - The last level will be filled left → right
 - Order property:
     - For every non-root node `i`, the parent is not lower priority than node i
@@ -53,26 +50,38 @@ class binary_heap {
   - Ordering continually checks the inserted element against its parent until the order property is achieved.
 - Duplicates are allowed
 - Complexity: O(log n). May cause container reallocation, spiking latency.
-- Exception safety: Strong guarantee
+- Exception safety: 
+  - Strong guarantee if T is nothrow move-constructible or copyable, and Compare does not throw
+  - Otherwise basic guarantee
 #### emplace
 - Returns void
 - Constructs the element in-place at the end of the heap and order the container according to the comparator and order property.
   - Ordering continually checks the inserted element against its parent until the order property is achieved.
 - Complexity: O(log n). May cause container reallocation, spiking latency.
-- Exception safety: Strong guarantee
+- Exception safety:
+    - Strong guarantee if T is nothrow move-constructible or copyable, and Compare does not throw
+    - Otherwise basic guarantee
 #### pop
 - Returns void
 - Effect: Removes the element at index 0 (the element that would have been returned by top()) and orders the container
   - Moves the last element to index 0, and then bubbles down, comparing the priority child continually, until the order property is satisfied.
 - Requires: `!empty()`
 - Complexity: O(log n)
-- Exception safety: Non-throwing
+- Exception safety: 
+  - Non-throwing if T is nothrow move-constructible and Compare is non-throwing
+  - Otherwise, basic guarantee
 ### Lookup
 #### top
 - Returns a reference to the top element (index 0)
 - Requires: `!empty()`
 - Complexity: O(1)
 - Exception safety: Non-throwing
+
+## Notes:
+- The structure is not stable
+- Equal-priority elements will come out of the container in any relative order
+- Growth follows underlying vector strategy
+- Reallocation invalidates references, pointers, and iterators
 
 ## Non-goals
 - STL templated Container feature parity
