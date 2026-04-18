@@ -172,6 +172,50 @@ TEST(VectorTest, ResizeCorrectlyDecreasesSize) {
     EXPECT_EQ(myVec[2], 100);
 }
 
+TEST(VectorTest, FrontReturnsFirstElement) {
+    systems_dsa::vector<int> myVec { 1, 2, 3 };
+    ASSERT_EQ(myVec.front(), myVec[0]);
+}
+
+TEST(VectorTest, BackReturnsLastElement) {
+    systems_dsa::vector<int> myVec { 1, 2, 3 };
+    ASSERT_EQ(myVec.back(), myVec[myVec.size() - 1]);
+}
+
+TEST(VectorTest, BackReturnsOnlyElement) {
+    systems_dsa::vector<int> myVec { 1 };
+    ASSERT_EQ(myVec.front(), myVec[myVec.size() - 1]);
+}
+
+TEST(VectorTest, SubscriptOperatorSupportsAssignment) {
+    systems_dsa::vector<LifetimeTracker> myVec {};
+
+    for (int i {}; i < 5; ++i) {
+        myVec.push_back({ i });
+    }
+    EXPECT_EQ(myVec.size(), 5);
+    EXPECT_GE(myVec.capacity(), 5);
+
+    auto oldSize { myVec.size() };
+    auto oldCapacity { myVec.capacity() };
+
+    // Copy assignment
+    LifetimeTracker::resetCounts();
+    LifetimeTracker tracker { 12 };
+    myVec[3] = tracker;
+    EXPECT_EQ(LifetimeTracker::copyAssignCount, 1);
+    EXPECT_EQ(myVec[3].id, tracker.id);
+
+    // Move assignment
+    LifetimeTracker::resetCounts();
+    myVec[4] = LifetimeTracker { 15 };
+    EXPECT_EQ(LifetimeTracker::moveAssignCount, 1);
+    EXPECT_EQ(myVec[4].id, 15);
+
+    EXPECT_EQ(oldSize, myVec.size());
+    EXPECT_EQ(oldCapacity, myVec.capacity());
+}
+
 //////////////////////
 // Exception Safety //
 //////////////////////
@@ -226,3 +270,7 @@ TEST(VectorTest, DestructorDestroysElements) {
     }
     EXPECT_EQ(LifetimeTracker::dtorCount, 10);
 }
+
+///////////////////////
+// Adversarial Tests //
+///////////////////////

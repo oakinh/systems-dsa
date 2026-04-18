@@ -171,44 +171,43 @@ namespace systems_dsa {
     // ---------------------
     // Element Access
     // ---------------------
+
+        // operator[]
         const_reference operator[](size_type index) const {
             return m_data[index];
         }
-
         reference operator[](size_type index) {
             return m_data[index];
         }
 
+        // at()
         const_reference at(size_type index) const {
             if (index < m_size) {
                 return m_data[index];
             }
             throw std::out_of_range("Vector index out of bounds\n");
-            return m_data[index];
         }
-
         reference at(size_type index) {
             if (index < m_size) {
                 return m_data[index];
             }
             throw std::out_of_range("Vector index out of bounds\n");
-            return m_data[index];
         }
 
+        // front()
         const_reference front() const {
             return m_data[0];
         }
-
         reference front() {
             return m_data[0];
         }
 
+        // back()
         const_reference back() const {
-            return m_data[m_size > 0 ? m_size - 1 : 0];
+            return m_data[m_size - 1];
         }
-
         reference back() {
-            return m_data[m_size > 0 ? m_size - 1 : 0];
+            return m_data[m_size - 1];
         }
 
         // TODO: Revisit these
@@ -349,6 +348,10 @@ namespace systems_dsa {
     #ifndef NDEBUG
         void assertValid() {
             assert(m_capacity >= m_size);
+            if (m_size > 0) {
+                const auto& ref1 [[maybe_unused]] { front() };
+                const auto& ref2 [[maybe_unused]] { back() };
+            }
         }
     #endif
     };
