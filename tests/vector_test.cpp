@@ -3,8 +3,11 @@
 #include "utils/lifetime_tracker.hpp"
 #include "utils/throws_on_copy.hpp"
 
+///////////////////////////////
+// Basic functionality tests //
+///////////////////////////////
+
 TEST(VectorTest, PushBackIncreasesSizeCapacity) {
-    [[maybe_unused]]ThrowsOnCopy myClass {};
     systems_dsa::vector<int> myVec;
     myVec.push_back(2);
     myVec.push_back(8);
@@ -169,6 +172,10 @@ TEST(VectorTest, ResizeCorrectlyDecreasesSize) {
     EXPECT_EQ(myVec[2], 100);
 }
 
+//////////////////////
+// Exception Safety //
+//////////////////////
+
 TEST(VectorTest, ContainerUnmodifiedAfterException) {
     ThrowsOnCopy::resetCounts();
     systems_dsa::vector<ThrowsOnCopy> myVec;
@@ -191,5 +198,29 @@ TEST(VectorTest, ContainerUnmodifiedAfterException) {
     } catch (const std::exception& e) {
         FAIL() << "Escaped exception: " << e.what();
     }
+}
 
+///////////////////////
+// Lifetime Tracking //
+///////////////////////
+
+TEST(VectorTest, PopBackDestroysElement) {
+    systems_dsa::vector<LifetimeTracker> myVec {};
+
+    myVec.push_back({});
+    LifetimeTracker::resetCounts();
+    myVec.pop_back();
+    EXPECT_EQ(LifetimeTracker::dtorCount, 1);
+    LifetimeTracker::resetCounts();
+}
+
+TEST(VectorTest, DestructorDestroysElements) {
+    {
+        systems_dsa::vector<LifetimeTracker> myVec {};
+        for (std::size_t i {}; i < 10; ++i) {
+            myVec.push_back({});
+        }
+        LifetimeTracker::resetCounts();
+    }
+    EXPECT_EQ(LifetimeTracker::dtorCount, 10);
 }
