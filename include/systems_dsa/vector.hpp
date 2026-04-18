@@ -4,6 +4,13 @@
 #include <type_traits>
 #include <optional>
 
+#ifndef NDEBUG
+#define VEC_ASSERT_VALID() assertValid();
+#else
+#define VEC_ASSERT_VALID() (void(0))
+#endif
+
+
 namespace systems_dsa {
     template <typename T>
     class vector {
@@ -14,11 +21,13 @@ namespace systems_dsa {
         // Default constructor
         vector() {
             allocate(5);
+            VEC_ASSERT_VALID();
         };
 
         // Constructor with size
         explicit vector(size_t n) : m_capacity { n }  {
             allocate(n);
+            VEC_ASSERT_VALID();
         }
         // TODO: Add constructor that takes a std::initializer_list
         vector(std::initializer_list<T> list) {
@@ -28,11 +37,6 @@ namespace systems_dsa {
             }
         }
 
-        // Destructor
-        ~vector() {
-            destroyData(m_data, m_size);
-            deallocate(m_data);
-        }
         // Copy constructor
         vector(const vector& other) {
             allocate(other.capacity());
@@ -45,7 +49,7 @@ namespace systems_dsa {
             } catch (...) {
 
             }
-
+            VEC_ASSERT_VALID();
         }
 
         // Copy assignment
@@ -61,17 +65,19 @@ namespace systems_dsa {
             for (std::size_t i {}; i < other.size(); ++i) {
                 m_data[i] = other.m_data[i];
             }
-            assert(m_size == other.size());
-
+            m_size = other.size();
+            // assert(m_size == other.size());
+            VEC_ASSERT_VALID();
         }
 
         // Move constructor
-        vector(vector&& vec) noexcept {
-            m_data = vec.m_data;
-            m_capacity = vec.capacity();
-            m_size = vec.size();
-            vec.m_data = nullptr;
-            vec.m_size = 0;
+        vector(vector&& other) noexcept {
+            m_data = other.m_data;
+            m_capacity = other.capacity();
+            m_size = other.size();
+            other.m_data = nullptr;
+            other.m_size = 0;
+            VEC_ASSERT_VALID();
         }
 
         // Move assignment
@@ -87,8 +93,17 @@ namespace systems_dsa {
             m_capacity = other.capacity();
             m_size = other.size();
             other.m_size = 0;
-
+            other.m_capacity = 0;
+            VEC_ASSERT_VALID();
             return *this;
+        }
+
+        // Destructor
+        ~vector() {
+            destroyData(m_data, m_size);
+            deallocate(m_data);
+            m_size = 0;
+            m_capacity = 0;
         }
     // ---------------------
     // Size & Capacity
@@ -110,6 +125,7 @@ namespace systems_dsa {
                 return;
             }
             allocate(newCapacity);
+            VEC_ASSERT_VALID();
         };
 
         constexpr void resize(size_t newSize) {
@@ -130,7 +146,7 @@ namespace systems_dsa {
                 }
                 m_size = newSize;
             }
-
+            VEC_ASSERT_VALID();
 
         }
 
@@ -145,6 +161,7 @@ namespace systems_dsa {
                 delete m_data;
                 allocate(m_size);
             }
+            VEC_ASSERT_VALID();
         };
 
     // ---------------------
@@ -192,22 +209,23 @@ namespace systems_dsa {
             }
             new (m_data + m_size) T(std::forward<Args>(args)...);
             ++m_size;
+            VEC_ASSERT_VALID();
         }
 
         void pop_back() {
-            // TODO: Test proper destruction
             if (m_size == 0) {
                 std::cerr << "There's nothing in Vector to pop\n";
                 return;
             }
-            if constexpr (!std::is_trivially_destructible<T>()) {
-                (m_data + m_size)->~T();
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                (m_data + m_size - 1)->~T();
             }
             --m_size;
+            VEC_ASSERT_VALID();
         }
 
     private:
-        size_t m_capacity { 5 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
+        size_t m_capacity {}; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
         size_t m_size {};
         T* m_data { nullptr };
 
@@ -217,31 +235,33 @@ namespace systems_dsa {
 
             if (!vec.m_data) {
                 // Initial allocation
+                assert(vec.m_size == 0);
                 vec.m_data = static_cast<T*>(rawMem);
             } else {
                 // Reallocation
                 T* newData = static_cast<T*>(rawMem);
-                size_t constructed {};
+                size_t i {};
                 try {
-                    for (; constructed < vec.m_size; ++constructed) {
-                        new (newData + constructed) T(std::move_if_noexcept(vec.m_data[constructed]));
+                    for (; i < vec.m_size; ++i) {
+                        new (newData + i) T(std::move_if_noexcept(vec.m_data[i]));
                     }
                 } catch (...) {
-                    destroyData(newData, constructed);
+                    destroyData(newData, i);
                     deallocate(newData);
                     throw;
                 }
 
                 // Destroy the old data and deallocate
-                destroyData(vec.m_data, m_size);
+                destroyData(vec.m_data, vec.m_size);
                 deallocate(vec.m_data);
                 // Steal the new data
                 vec.m_data = newData;
+                vec.m_size = i;
             }
 
-            m_capacity = capacity;
+            vec.m_capacity = capacity;
 
-            assert(m_capacity >= m_size && "m_capacity is greater than or equal to m_size after allocation");
+            assert(vec.m_capacity >= vec.m_size && "m_capacity is greater than or equal to m_size after allocation");
         }
 
         void expand(std::optional<size_t> desiredCapacity = std::nullopt) {
@@ -251,7 +271,7 @@ namespace systems_dsa {
                 std::cerr << "No need to expand, existing memory block still has room\n";
                 return;
             }
-            //size_t newCapacity { m_capacity + ( m_capacity / 2)};
+
             size_t newCapacity { desiredCapacity.value_or(getExpandedCapacity()) };
             assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
             allocate(newCapacity);
@@ -263,29 +283,42 @@ namespace systems_dsa {
         }
 
         void destroyData(T* data, size_t size) noexcept {
-            if constexpr (!std::is_trivially_destructible_v<T>()) {
+            if constexpr (!std::is_trivially_destructible_v<T>) {
                 // Reverse order destruction
                 for (size_t i { size }; i > 0; --i) {
                     (data + (i - 1))->~T();
                 }
             }
-            m_size = 0;
         }
         void deallocate(T* data) noexcept {
-            assert(m_size == 0);
             ::operator delete (static_cast<void*>(data), static_cast<std::align_val_t>(alignof(T)));
+            data = nullptr;
         }
 
         void moveElements(vector& source, vector& destination) {
             assert(source.capacity() <= destination.capacity());
+            void* rawMem = ::operator new(sizeof(T) * destination.capacity(), static_cast<std::align_val_t>(alignof(T)));
+            T* newData = static_cast<T*>(rawMem);
+            std::size_t i { source.size() };
             try {
-                // TODO: This should probably use the swap method my hash map did
-                for (std::size_t i { source.size() }; i > 0; --i) {
-                    destination.m_data[i - 1] = std::move_if_noexcept(source.m_data[i - 1]);
+                // TODO: Construction should be forward order, not reverse order
+                for (; i > 0; --i) {
+                    (newData + ( i - 1)) = std::move_if_noexcept(source.m_data + ( i - 1));
                 }
             } catch (...) {
-
+                destroyData(newData, i);
+                deallocate(newData);
+                return;
             }
+
+            destination.m_data = newData;
         }
+
+
+    #ifndef NDEBUG
+        void assertValid() {
+            assert(m_capacity >= m_size);
+        }
+    #endif
     };
 }

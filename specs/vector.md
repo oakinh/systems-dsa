@@ -1,6 +1,5 @@
 # Dynamic Array (Vector Clone)
-We're choosing to use a signed type for the array size and subscript operators. 
-The choice of using an unsigned integer type in the STL is generally seen as a mistake.
+
 ## Operations
 ### Construction / destruction
   - `Vector()` // Default constructor
