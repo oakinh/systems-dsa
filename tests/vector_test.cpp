@@ -81,13 +81,13 @@ TEST(VectorTest, ContainerExpandsAfterPushes) {
     std::vector<std::string> strVec {
         "Hello",
         "World",
-        "my name is bob the builder",
+        "my name is bob",
         "Boom",
         "Big explosion",
-        "99999",
-        "0000000",
-        "111111111",
-        "22222222222",
+        "Super",
+        "cali",
+        "fragilistic",
+        "expialidocious",
     };
 
     for (size_t i {}; i < strVec.size(); ++i) {
