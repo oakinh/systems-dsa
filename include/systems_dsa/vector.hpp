@@ -220,7 +220,7 @@ namespace systems_dsa {
     // ---------------------
     // Pushing & popping
     // ---------------------
-        void push_back(const T& value) noexcept {
+        void push_back(const T& value) {
             emplace_back(value);
         }
 
@@ -241,7 +241,7 @@ namespace systems_dsa {
             VEC_ASSERT_VALID();
         }
 
-        void pop_back() {
+        void pop_back() noexcept(std::is_nothrow_destructible_v<T>) {
             if (m_size == 0) {
                 std::cerr << "There's nothing in Vector to pop\n";
                 return;
@@ -311,7 +311,7 @@ namespace systems_dsa {
             return (cap + cap / 2);
         }
 
-        void destroyData(T* data, size_type size) noexcept {
+        void destroyData(T* data, size_type size) noexcept(std::is_nothrow_destructible_v<T>) {
             if constexpr (!std::is_trivially_destructible_v<T>) {
                 // Reverse order destruction
                 for (size_type i { size }; i > 0; --i) {
