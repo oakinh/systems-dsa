@@ -208,6 +208,7 @@ TEST(VectorTest, PopBackDestroysElement) {
     systems_dsa::vector<LifetimeTracker> myVec {};
 
     myVec.push_back({});
+    ASSERT_TRUE(myVec[0].isAlive());
     LifetimeTracker::resetCounts();
     myVec.pop_back();
     EXPECT_EQ(LifetimeTracker::dtorCount, 1);
@@ -219,6 +220,7 @@ TEST(VectorTest, DestructorDestroysElements) {
         systems_dsa::vector<LifetimeTracker> myVec {};
         for (std::size_t i {}; i < 10; ++i) {
             myVec.push_back({});
+            ASSERT_TRUE(myVec[i].isAlive());
         }
         LifetimeTracker::resetCounts();
     }
