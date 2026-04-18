@@ -7,78 +7,13 @@
 namespace systems_dsa {
     template <typename T>
     class vector {
-    private:
-        constexpr static std::size_t startingCapacity { 2 }; // TODO: Just make this a literal, to save space
-        size_t m_capacity { startingCapacity }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
-        size_t m_size {};
-        T* m_data { nullptr };
-
-        constexpr void allocate(size_t capacity) {
-            void* rawMem = ::operator new(sizeof(T) * capacity, static_cast<std::align_val_t>(alignof(T)));
-
-            if (!m_data) {
-                // Initial allocation
-                m_data = static_cast<T*>(rawMem);
-            } else {
-                // Reallocation
-                T* newData = static_cast<T*>(rawMem);
-                size_t constructed {};
-                try {
-                    for (; constructed < m_size; ++constructed) {
-                        new (newData + constructed) T(std::move_if_noexcept(m_data[constructed]));
-                    }
-                } catch (...) {
-                    destroyData(newData, constructed);
-                    deallocate(newData);
-                    throw;
-                }
-
-                destroyData(m_data, m_size);
-                deallocate(m_data);
-                m_data = newData;
-            }
-
-            m_capacity = capacity;
-
-            assert(m_capacity >= m_size && "m_capacity is greater than or equal to m_size after allocation");
-        }
-
-        void expand(std::optional<size_t> desiredCapacity = std::nullopt) {
-            assert(m_size <= m_capacity && "m_size is bigger than m_capacity, there's a bug\n");
-            assert(m_size == m_capacity && "m_size does not equal m_capacity when expansion was attempted\n");
-            if (m_size != m_capacity) {
-                std::cerr << "No need to expand, existing memory block still has room\n";
-                return;
-            }
-            //size_t newCapacity { m_capacity + ( m_capacity / 2)};
-            size_t newCapacity { desiredCapacity.value_or(getExpandedCapacity()) };
-            assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
-            allocate(newCapacity);
-        }
-
-        size_t getExpandedCapacity(std::optional<size_t> newSize = std::nullopt) const {
-            size_t cap { newSize.value_or(m_capacity)};
-            return (cap + cap / 2);
-        }
-
-        void destroyData(T* data, size_t size) noexcept {
-            if constexpr (!std::is_trivially_destructible<T>()) {
-                for (size_t i { size }; i > 0; --i) {
-                    (data + (i - 1))->~T();
-                }
-            }
-
-        }
-        void deallocate(T* data) noexcept {
-            ::operator delete (static_cast<void*>(data), static_cast<std::align_val_t>(alignof(T)));
-        }
     public:
     // ---------------------
     // Constructors / Destructor
     // ---------------------
         // Default constructor
         vector() {
-            allocate(startingCapacity);
+            allocate(5);
         };
 
         // Constructor with size
@@ -98,15 +33,41 @@ namespace systems_dsa {
             destroyData(m_data, m_size);
             deallocate(m_data);
         }
-        // Copy constructor ?
-        vector(const vector& other) = delete;
+        // Copy constructor
+        vector(const vector& other) {
+            allocate(other.capacity());
+            assert(m_capacity == other.capacity());
+            try {
+                for (std::size_t i {}; i < other.size(); ++i) {
+                    m_data[i] = other.m_data[i];
+                }
+                assert(m_size == other.size());
+            } catch (...) {
 
-        // Copy assignment ?
-        vector& operator=(const vector& other) = delete;
+            }
+
+        }
+
+        // Copy assignment
+        vector& operator=(const vector& other) {
+            if (&other == this) {
+                return *this;
+            }
+
+            destroyData(m_data, m_size);
+            deallocate(m_data);
+            allocate(other.capacity());
+            assert(m_capacity == other.capacity());
+            for (std::size_t i {}; i < other.size(); ++i) {
+                m_data[i] = other.m_data[i];
+            }
+            assert(m_size == other.size());
+
+        }
 
         // Move constructor
-        vector(vector&& vec) noexcept
-            : m_data { vec.m_data } {
+        vector(vector&& vec) noexcept {
+            m_data = vec.m_data;
             m_capacity = vec.capacity();
             m_size = vec.size();
             vec.m_data = nullptr;
@@ -114,17 +75,18 @@ namespace systems_dsa {
         }
 
         // Move assignment
-        vector& operator=(vector&& vec) noexcept {
-            if (&vec == this) {
+        vector& operator=(vector&& other) noexcept {
+            if (&other == this) {
                 return *this;
             }
 
+            destroyData(m_data, m_size);
             deallocate(m_data);
-            m_data = vec.m_data;
-            vec.m_data = nullptr;
-            m_capacity = vec.capacity();
-            m_size = vec.size();
-            vec.m_size = 0;
+            m_data = other.m_data;
+            other.m_data = nullptr;
+            m_capacity = other.capacity();
+            m_size = other.size();
+            other.m_size = 0;
 
             return *this;
         }
@@ -156,6 +118,7 @@ namespace systems_dsa {
             } else if (newSize < m_size) {
                 // Decrease size
                 assert(m_size - newSize > 0);
+                // TODO: This is probably wrong
                 destroyData(m_data + newSize, m_size - newSize);
                 m_size = newSize;
             } else {
@@ -222,7 +185,7 @@ namespace systems_dsa {
         template <typename... Args>
         void emplace_back(Args&&... args) {
             if (!m_data) {
-                allocate(startingCapacity);
+                allocate(5);
             }
             if (m_size == m_capacity) {
                 expand();
@@ -241,6 +204,88 @@ namespace systems_dsa {
                 (m_data + m_size)->~T();
             }
             --m_size;
+        }
+
+    private:
+        size_t m_capacity { 5 }; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
+        size_t m_size {};
+        T* m_data { nullptr };
+
+        constexpr void allocate(size_t capacity, vector* vecPtr = nullptr) {
+            vector& vec = vecPtr ? *vecPtr : *this;
+            void* rawMem = ::operator new(sizeof(T) * capacity, static_cast<std::align_val_t>(alignof(T)));
+
+            if (!vec.m_data) {
+                // Initial allocation
+                vec.m_data = static_cast<T*>(rawMem);
+            } else {
+                // Reallocation
+                T* newData = static_cast<T*>(rawMem);
+                size_t constructed {};
+                try {
+                    for (; constructed < vec.m_size; ++constructed) {
+                        new (newData + constructed) T(std::move_if_noexcept(vec.m_data[constructed]));
+                    }
+                } catch (...) {
+                    destroyData(newData, constructed);
+                    deallocate(newData);
+                    throw;
+                }
+
+                // Destroy the old data and deallocate
+                destroyData(vec.m_data, m_size);
+                deallocate(vec.m_data);
+                // Steal the new data
+                vec.m_data = newData;
+            }
+
+            m_capacity = capacity;
+
+            assert(m_capacity >= m_size && "m_capacity is greater than or equal to m_size after allocation");
+        }
+
+        void expand(std::optional<size_t> desiredCapacity = std::nullopt) {
+            assert(m_size <= m_capacity && "m_size is bigger than m_capacity, there's a bug\n");
+            assert(m_size == m_capacity && "m_size does not equal m_capacity when expansion was attempted\n");
+            if (m_size != m_capacity) {
+                std::cerr << "No need to expand, existing memory block still has room\n";
+                return;
+            }
+            //size_t newCapacity { m_capacity + ( m_capacity / 2)};
+            size_t newCapacity { desiredCapacity.value_or(getExpandedCapacity()) };
+            assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
+            allocate(newCapacity);
+        }
+
+        size_t getExpandedCapacity(std::optional<size_t> newSize = std::nullopt) const {
+            size_t cap { newSize.value_or(m_capacity)};
+            return (cap + cap / 2);
+        }
+
+        void destroyData(T* data, size_t size) noexcept {
+            if constexpr (!std::is_trivially_destructible_v<T>()) {
+                // Reverse order destruction
+                for (size_t i { size }; i > 0; --i) {
+                    (data + (i - 1))->~T();
+                }
+            }
+            m_size = 0;
+        }
+        void deallocate(T* data) noexcept {
+            assert(m_size == 0);
+            ::operator delete (static_cast<void*>(data), static_cast<std::align_val_t>(alignof(T)));
+        }
+
+        void moveElements(vector& source, vector& destination) {
+            assert(source.capacity() <= destination.capacity());
+            try {
+                // TODO: This should probably use the swap method my hash map did
+                for (std::size_t i { source.size() }; i > 0; --i) {
+                    destination.m_data[i - 1] = std::move_if_noexcept(source.m_data[i - 1]);
+                }
+            } catch (...) {
+
+            }
         }
     };
 }
