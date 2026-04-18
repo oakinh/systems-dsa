@@ -73,6 +73,10 @@ public:
         return *this;
     }
 
+    bool isAlive() const {
+        return m_alive;
+    }
+
     friend std::ostream& operator<<(std::ostream& out, const LifetimeTracker& tracker) {
         out << "tracker isAlive: " << tracker.m_alive << "\n";
         out << "liveCount: " << tracker.liveCount << "\n";
