@@ -15,6 +15,10 @@ namespace systems_dsa {
     template <typename T>
     class vector {
     public:
+        using reference = T&;
+        using const_reference = T&;
+        using size_type = std::size_t;
+
     // ---------------------
     // Constructors / Destructor
     // ---------------------
@@ -25,7 +29,7 @@ namespace systems_dsa {
         };
 
         // Constructor with size
-        explicit vector(size_t n) : m_capacity { n }  {
+        explicit vector(size_type n) : m_capacity { n }  {
             allocate(n);
             VEC_ASSERT_VALID();
         }
@@ -42,7 +46,7 @@ namespace systems_dsa {
             allocate(other.capacity());
             assert(m_capacity == other.capacity());
             try {
-                for (std::size_t i {}; i < other.size(); ++i) {
+                for (size_type i {}; i < other.size(); ++i) {
                     m_data[i] = other.m_data[i];
                 }
                 assert(m_size == other.size());
@@ -62,7 +66,7 @@ namespace systems_dsa {
             deallocate(m_data);
             allocate(other.capacity());
             assert(m_capacity == other.capacity());
-            for (std::size_t i {}; i < other.size(); ++i) {
+            for (size_type i {}; i < other.size(); ++i) {
                 m_data[i] = other.m_data[i];
             }
             m_size = other.size();
@@ -108,18 +112,18 @@ namespace systems_dsa {
     // ---------------------
     // Size & Capacity
     // ---------------------
-        size_t size() const {
+        size_type size() const {
 
             return m_size;
         }
-        size_t capacity() const {
+        size_type capacity() const {
             return m_capacity;
         }
         bool empty() const {
             return m_size == 0;
         }
 
-        constexpr void reserve(size_t newCapacity) {
+        constexpr void reserve(size_type newCapacity) {
             if (newCapacity <= m_capacity) {
                 std::cerr << "Cannot reserve less than or equal to current capacity.\n";
                 return;
@@ -128,7 +132,7 @@ namespace systems_dsa {
             VEC_ASSERT_VALID();
         };
 
-        constexpr void resize(size_t newSize) {
+        constexpr void resize(size_type newSize) {
             if (newSize == m_size) {
                 std::cerr << "Cannot resize to equal to current size.\n";
             } else if (newSize < m_size) {
@@ -139,9 +143,9 @@ namespace systems_dsa {
                 m_size = newSize;
             } else {
                 // Increase size
-                size_t oldSize { m_size };
+                size_type oldSize { m_size };
                 allocate(getExpandedCapacity(newSize)); // TODO: Confirm this is intended behavior. Maybe we want capacity to equal size?
-                for (size_t i { oldSize }; i < newSize; ++i) {
+                for (size_type i { oldSize }; i < newSize; ++i) {
                     new (m_data + i) T();
                 }
                 m_size = newSize;
@@ -167,15 +171,15 @@ namespace systems_dsa {
     // ---------------------
     // Element Access
     // ---------------------
-        const T& operator[](size_t index) const {
+        const_reference operator[](size_type index) const {
             return m_data[index];
         }
 
-        T& operator[](size_t index) {
+        reference operator[](size_type index) {
             return m_data[index];
         }
 
-        T& at(size_t index) {
+        const_reference at(size_type index) const {
             if (index < m_size) {
                 return m_data[index];
             }
@@ -183,6 +187,31 @@ namespace systems_dsa {
             return m_data[index];
         }
 
+        reference at(size_type index) {
+            if (index < m_size) {
+                return m_data[index];
+            }
+            throw std::out_of_range("Vector index out of bounds\n");
+            return m_data[index];
+        }
+
+        const_reference front() const {
+            return m_data[0];
+        }
+
+        reference front() {
+            return m_data[0];
+        }
+
+        const_reference back() const {
+            return m_data[m_size > 0 ? m_size - 1 : 0];
+        }
+
+        reference back() {
+            return m_data[m_size > 0 ? m_size - 1 : 0];
+        }
+
+        // TODO: Revisit these
         T& operator*() { return *m_data; }
         T* operator->() { return m_data; }
         // TODO: we may not want this cast to bool, or we may want different behavior
@@ -225,11 +254,11 @@ namespace systems_dsa {
         }
 
     private:
-        size_t m_capacity {}; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
-        size_t m_size {};
+        size_type m_capacity {}; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
+        size_type m_size {};
         T* m_data { nullptr };
 
-        constexpr void allocate(size_t capacity, vector* vecPtr = nullptr) {
+        constexpr void allocate(size_type capacity, vector* vecPtr = nullptr) {
             vector& vec = vecPtr ? *vecPtr : *this;
             void* rawMem = ::operator new(sizeof(T) * capacity, static_cast<std::align_val_t>(alignof(T)));
 
@@ -240,7 +269,7 @@ namespace systems_dsa {
             } else {
                 // Reallocation
                 T* newData = static_cast<T*>(rawMem);
-                size_t i {};
+                size_type i {};
                 try {
                     for (; i < vec.m_size; ++i) {
                         new (newData + i) T(std::move_if_noexcept(vec.m_data[i]));
@@ -264,7 +293,7 @@ namespace systems_dsa {
             assert(vec.m_capacity >= vec.m_size && "m_capacity is greater than or equal to m_size after allocation");
         }
 
-        void expand(std::optional<size_t> desiredCapacity = std::nullopt) {
+        void expand(std::optional<size_type> desiredCapacity = std::nullopt) {
             assert(m_size <= m_capacity && "m_size is bigger than m_capacity, there's a bug\n");
             assert(m_size == m_capacity && "m_size does not equal m_capacity when expansion was attempted\n");
             if (m_size != m_capacity) {
@@ -272,20 +301,20 @@ namespace systems_dsa {
                 return;
             }
 
-            size_t newCapacity { desiredCapacity.value_or(getExpandedCapacity()) };
+            size_type newCapacity { desiredCapacity.value_or(getExpandedCapacity()) };
             assert(desiredCapacity.has_value() ? newCapacity == desiredCapacity.value() : true);
             allocate(newCapacity);
         }
 
-        size_t getExpandedCapacity(std::optional<size_t> newSize = std::nullopt) const {
-            size_t cap { newSize.value_or(m_capacity)};
+        size_type getExpandedCapacity(std::optional<size_type> newSize = std::nullopt) const {
+            size_type cap { newSize.value_or(m_capacity)};
             return (cap + cap / 2);
         }
 
-        void destroyData(T* data, size_t size) noexcept {
+        void destroyData(T* data, size_type size) noexcept {
             if constexpr (!std::is_trivially_destructible_v<T>) {
                 // Reverse order destruction
-                for (size_t i { size }; i > 0; --i) {
+                for (size_type i { size }; i > 0; --i) {
                     (data + (i - 1))->~T();
                 }
             }
@@ -299,7 +328,7 @@ namespace systems_dsa {
             assert(source.capacity() <= destination.capacity());
             void* rawMem = ::operator new(sizeof(T) * destination.capacity(), static_cast<std::align_val_t>(alignof(T)));
             T* newData = static_cast<T*>(rawMem);
-            std::size_t i { source.size() };
+            size_type i { source.size() };
             try {
                 // TODO: Construction should be forward order, not reverse order
                 for (; i > 0; --i) {
@@ -313,6 +342,8 @@ namespace systems_dsa {
 
             destination.m_data = newData;
         }
+
+
 
 
     #ifndef NDEBUG
