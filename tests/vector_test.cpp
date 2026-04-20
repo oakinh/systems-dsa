@@ -140,6 +140,7 @@ TEST(VectorTest, EmplaceBackConstructsInContainer) {
     }
 
     EXPECT_EQ(LifetimeTracker::moveCtorCount, 0);
+    EXPECT_EQ(LifetimeTracker::copyCtorCount, 0);
     EXPECT_EQ(LifetimeTracker::ctorCount, 2);
 
     LifetimeTracker::resetCounts();

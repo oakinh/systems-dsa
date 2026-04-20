@@ -10,14 +10,23 @@
 #define VEC_ASSERT_VALID() (void(0))
 #endif
 
+// TODO: Use moveElements
+// TODO: Test move and copy semantics of the container
 
 namespace systems_dsa {
     template <typename T>
     class vector {
+    private:
+        template <bool IsConst>
+        class iterator_impl;
     public:
         using reference = T&;
         using const_reference = T&;
         using size_type = std::size_t;
+        using value_type = T;
+        using const_iterator = iterator_impl<true>&;
+        using iterator = iterator_impl<false>;
+
 
     // ---------------------
     // Constructors / Destructor
@@ -33,8 +42,8 @@ namespace systems_dsa {
             allocate(n);
             VEC_ASSERT_VALID();
         }
-        // TODO: Add constructor that takes a std::initializer_list
-        vector(std::initializer_list<T> list) {
+
+        vector(std::initializer_list<value_type> list) {
             allocate(list.size());
             for (auto element : list) {
                 push_back(std::move_if_noexcept(element));
@@ -72,6 +81,7 @@ namespace systems_dsa {
             m_size = other.size();
             // assert(m_size == other.size());
             VEC_ASSERT_VALID();
+            return *this;
         }
 
         // Move constructor
@@ -134,12 +144,10 @@ namespace systems_dsa {
 
         constexpr void resize(size_type newSize) {
             if (newSize == m_size) {
-                std::cerr << "Cannot resize to equal to current size.\n";
+                return;
             } else if (newSize < m_size) {
                 // Decrease size
-                assert(m_size - newSize > 0);
-                // TODO: This is probably wrong
-                destroyData(m_data + newSize, m_size - newSize);
+                destroyData(m_data + newSize, m_size - newSize); // Resize down to newSize elements
                 m_size = newSize;
             } else {
                 // Increase size
@@ -151,7 +159,6 @@ namespace systems_dsa {
                 m_size = newSize;
             }
             VEC_ASSERT_VALID();
-
         }
 
         void shrink_to_fit() {
@@ -210,20 +217,14 @@ namespace systems_dsa {
             return m_data[m_size - 1];
         }
 
-        // TODO: Revisit these
-        T& operator*() { return *m_data; }
-        T* operator->() { return m_data; }
-        // TODO: we may not want this cast to bool, or we may want different behavior
-        explicit operator bool() const { return !empty(); }
-
     // ---------------------
     // Pushing & popping
     // ---------------------
-        void push_back(const T& value) {
+        void push_back(const value_type& value) {
             emplace_back(value);
         }
 
-        void push_back(T&& value) {
+        void push_back(value_type&& value) {
             emplace_back(std::move(value));
         }
 
@@ -327,11 +328,10 @@ namespace systems_dsa {
             assert(source.capacity() <= destination.capacity());
             void* rawMem = ::operator new(sizeof(T) * destination.capacity(), static_cast<std::align_val_t>(alignof(T)));
             T* newData = static_cast<T*>(rawMem);
-            size_type i { source.size() };
+            size_type i {};
             try {
-                // TODO: Construction should be forward order, not reverse order
-                for (; i > 0; --i) {
-                    (newData + ( i - 1)) = std::move_if_noexcept(source.m_data + ( i - 1));
+                for (; i < source.size(); ++i) {
+                    newData + i  = std::move_if_noexcept(source.m_data + i);
                 }
             } catch (...) {
                 destroyData(newData, i);
@@ -341,9 +341,68 @@ namespace systems_dsa {
 
             destination.m_data = newData;
         }
+        ///////////////
+        // Iterators //
+        ///////////////
+
+        template <bool IsConst>
+        class iterator_impl {
+            using reference = std::conditional_t<IsConst, const value_type&, value_type&>;
+            using pointer = std::conditional_t<IsConst, const value_type*, value_type*>;
+            using owner_type = std::conditional_t<IsConst, const vector, vector>;
+
+            size_type m_index {};
+            owner_type* m_owner { nullptr };
 
 
+        public:
+            iterator_impl() = default;
 
+            iterator_impl(size_type index) noexcept
+                : m_index(index)
+            {}
+
+            template <bool OtherConst>
+            requires(IsConst && !OtherConst)
+            iterator_impl(const iterator_impl<OtherConst>& other) noexcept {
+                m_index = other.m_index;
+                m_owner = other.m_owner;
+            }
+
+            reference operator*() const {
+                assert(m_owner && "m_owner is a nullptr");
+                assert(m_index != m_owner->m_size && "Attempted to dereference an end iterator");
+                return *(m_owner->m_data + m_index);
+            }
+
+            pointer operator->() const {
+                assert(m_owner && "m_owner is a nullptr");
+                assert(m_index != m_owner->m_size && "Attempted to dereference an end iterator");
+                return m_owner->m_data + m_index;
+            }
+
+            iterator_impl& operator++() {
+                ++m_index;
+                return *this;
+            }
+
+            iterator_impl operator++(int) {
+                ++m_index;
+                return *this;
+            }
+
+            template <bool OtherConst>
+            bool operator==(const iterator_impl<OtherConst>& other) const {
+                return (m_owner == other.m_owner && m_index == other.m_index);
+            }
+
+            template <bool OtherConst>
+            bool operator!=(const iterator_impl<OtherConst>& other) const {
+                return (m_owner != other.m_owner || m_index != other.m_index);
+            }
+
+            friend class vector;
+        };
 
     #ifndef NDEBUG
         void assertValid() {
