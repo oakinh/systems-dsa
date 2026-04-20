@@ -219,6 +219,16 @@ TEST(VectorTest, SubscriptOperatorSupportsAssignment) {
     EXPECT_EQ(oldCapacity, myVec.capacity());
 }
 
+TEST(VectorTest, RangeBasedForLoopWorks) {
+    systems_dsa::vector<int> myVec { 10, 20, 30, 40, 50, 60 };
+
+    std::size_t i {};
+    for (const auto& num : myVec) {
+        ASSERT_EQ(num, myVec[i]);
+        ++i;
+    }
+}
+
 //////////////////////
 // Exception Safety //
 //////////////////////
