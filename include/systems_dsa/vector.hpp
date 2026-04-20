@@ -229,7 +229,7 @@ namespace systems_dsa {
         }
 
         template <typename... Args>
-        void emplace_back(Args&&... args) {
+        reference emplace_back(Args&&... args) {
             if (!m_data) {
                 allocate(5);
             }
@@ -239,6 +239,7 @@ namespace systems_dsa {
             new (m_data + m_size) T(std::forward<Args>(args)...);
             ++m_size;
             VEC_ASSERT_VALID();
+            return *(m_data + m_size - 1);
         }
 
         void pop_back() noexcept(std::is_nothrow_destructible_v<T>) {
