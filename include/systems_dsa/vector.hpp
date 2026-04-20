@@ -254,6 +254,26 @@ namespace systems_dsa {
             VEC_ASSERT_VALID();
         }
 
+        ///////////////
+        // Iteration //
+        //////////////
+
+        // begin()
+        iterator begin() {
+            return { 0, this };
+        }
+        const_iterator begin() const {
+            return { 0, this };
+        }
+
+        // end()
+        iterator end() {
+            return { m_size, this };
+        }
+        const_iterator end() const {
+            return { m_size, this };
+        }
+
     private:
         size_type m_capacity {}; // TODO: Figure out when + how to shrink capacity after size has decreased significantly
         size_type m_size {};
@@ -359,8 +379,9 @@ namespace systems_dsa {
         public:
             iterator_impl() = default;
 
-            iterator_impl(size_type index) noexcept
-                : m_index(index)
+            iterator_impl(size_type index, owner_type* ownerPtr) noexcept
+                : m_index{ index }
+                , m_owner{ ownerPtr }
             {}
 
             template <bool OtherConst>
