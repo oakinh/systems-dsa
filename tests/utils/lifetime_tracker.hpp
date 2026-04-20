@@ -39,13 +39,6 @@ public:
         id = val;
     }
 
-    ~LifetimeTracker() {
-        assert(m_alive && "Destruction called on non-constructed object");
-        ++dtorCount;
-        --liveCount;
-        m_alive = false;
-    }
-
     LifetimeTracker(const LifetimeTracker& other [[maybe_unused]]) {
         assert(other.m_alive && "Copied from class is not alive.");
         m_alive = true;
@@ -84,6 +77,13 @@ public:
         m_alive = other.m_alive;
         id = other.id;
         return *this;
+    }
+
+    ~LifetimeTracker() {
+        assert(m_alive && "Destruction called on non-constructed object");
+        ++dtorCount;
+        --liveCount;
+        m_alive = false;
     }
 
     bool isAlive() const {

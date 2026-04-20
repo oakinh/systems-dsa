@@ -136,7 +136,9 @@ TEST(VectorTest, EmplaceBackConstructsInContainer) {
     systems_dsa::vector<LifetimeTracker> myVec(10);
     LifetimeTracker::resetCounts();
     for (size_t i {}; i < 2; ++i) {
-        myVec.emplace_back();
+        auto& ref { myVec.emplace_back(i) };
+        EXPECT_EQ(ref.id, i);
+        EXPECT_TRUE(ref.isAlive());
     }
 
     EXPECT_EQ(LifetimeTracker::moveCtorCount, 0);
