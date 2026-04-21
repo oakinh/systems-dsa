@@ -243,15 +243,16 @@ namespace systems_dsa {
         }
 
         void pop_back() noexcept(std::is_nothrow_destructible_v<T>) {
-            if (m_size == 0) {
-                std::cerr << "There's nothing in Vector to pop\n";
-                return;
-            }
             if constexpr (!std::is_trivially_destructible_v<T>) {
                 (m_data + m_size - 1)->~T();
             }
             --m_size;
             VEC_ASSERT_VALID();
+        }
+
+        void clear() {
+            destroyData(m_data, m_size);
+            m_size = 0;
         }
 
         ///////////////
@@ -374,7 +375,6 @@ namespace systems_dsa {
 
             size_type m_index {};
             owner_type* m_owner { nullptr };
-
 
         public:
             iterator_impl() = default;

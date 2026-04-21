@@ -5,7 +5,7 @@
 #include <random>
 #include <iostream>
 
-std::uint64_t getSeed(const char* envVar) {
+inline std::uint64_t getSeed(const char* envVar) {
     const char* env = std::getenv(envVar);
 
     if (env) {

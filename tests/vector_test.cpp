@@ -1,7 +1,9 @@
+#include "utils/lifetime_tracker.hpp"
+#include "utils/seed.hpp"
+#include "utils/throws_on_copy.hpp"
+
 #include <gtest/gtest.h>
 #include <systems_dsa/vector.hpp>
-#include "utils/lifetime_tracker.hpp"
-#include "utils/throws_on_copy.hpp"
 
 ///////////////////////////////
 // Basic functionality tests //
@@ -46,15 +48,6 @@ TEST(VectorTest, FailWhenDesiredCapacityIsLessThanCurrentCapacity) {
     myVec.reserve(10);
     myVec.reserve(5);
     EXPECT_EQ(myVec.capacity(), 10);
-}
-
-TEST(VectorTest, PopBackOnEmptyNoOps) {
-    systems_dsa::vector<std::string> myVec {};
-    size_t oldCapacity { myVec.capacity() };
-    size_t oldSize { myVec.size() };
-    myVec.pop_back();
-    EXPECT_EQ(oldCapacity, myVec.capacity());
-    EXPECT_EQ(oldSize, myVec.size());
 }
 
 TEST(VectorTest, ElementsIntactPostReserve) {
@@ -284,6 +277,72 @@ TEST(VectorTest, DestructorDestroysElements) {
     EXPECT_EQ(LifetimeTracker::dtorCount, 10);
 }
 
+TEST(VectorTest, SmallerResizeCallsDestructors) {
+    systems_dsa::vector<LifetimeTracker> myVec { 10, 20 ,30 , 40, 50, 60 ,70, 80 };
+    EXPECT_EQ(myVec.size(), 8);
+    LifetimeTracker::resetCounts();
+    myVec.resize(4);
+    EXPECT_EQ(myVec.size(), 4);
+    EXPECT_EQ(LifetimeTracker::dtorCount, 4);
+}
+
 ///////////////////////
 // Adversarial Tests //
 ///////////////////////
+
+TEST(VectorTest, RandomSeqEmplacePopResizeAccessAgainstStd) {
+    enum class OP : std::uint8_t {
+        EMPLACE,
+        POP,
+        RESIZE,
+        ACCESS,
+    };
+
+    std::uint64_t seed { getSeed("VECTOR_SEED") };
+    std::mt19937_64 rng(seed);
+    std::uniform_int_distribution<int> distVal(1, 1000);
+    std::uniform_int_distribution<int> distOp(0, 3);
+
+    systems_dsa::vector<LifetimeTracker> vec {};
+    std::vector<LifetimeTracker> reference {};
+
+    for (std::size_t i {}; i < 10'000; ++i) {
+        EXPECT_EQ(vec.empty(), reference.empty());
+
+        // Force insertion if empty
+        const int op { vec.empty() ? static_cast<int>(OP::EMPLACE) : distOp(rng) };
+        const int val { distVal(rng) };
+
+        switch (static_cast<OP>(op)) {
+        case OP::EMPLACE: {
+                const auto& vecVal { vec.emplace_back(val) };
+                const auto& refVal { reference.emplace_back(val) };
+                EXPECT_EQ(vecVal.id, refVal.id);
+                EXPECT_TRUE(vecVal.isAlive() && refVal.isAlive());
+                EXPECT_EQ(vec.size(), reference.size());
+                break;
+            }
+        case OP::POP:
+            if (vec.empty()) FAIL() << "Unreachable test code reached";
+            vec.pop_back();
+            reference.pop_back();
+            EXPECT_EQ(vec.size(), reference.size());
+            break;
+        case OP::RESIZE:
+            vec.resize(val);
+            reference.resize(val);
+            EXPECT_EQ(vec.size(), reference.size());
+            break;
+        case OP::ACCESS:
+            if (!vec.empty()) {
+                EXPECT_EQ(vec.front().id, reference.front().id);
+                EXPECT_EQ(vec.back().id, reference.back().id);
+            }
+            for (std::size_t j {}; j < vec.size(); ++j) {
+                EXPECT_EQ(vec[j].id, reference[j].id);
+                EXPECT_TRUE(vec[j].isAlive() && reference[j].isAlive());
+            }
+            break;
+        }
+    }
+}
