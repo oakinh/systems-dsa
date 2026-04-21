@@ -254,9 +254,9 @@ namespace systems_dsa {
             m_size = 0;
         }
 
-        ///////////////
-        // Iteration //
-        //////////////
+        // ---------------------
+        // Iteration
+        // ---------------------
 
         // begin()
         iterator begin() {
@@ -345,9 +345,9 @@ namespace systems_dsa {
             data = nullptr;
         }
 
-        ///////////////
-        // Iterators //
-        ///////////////
+        // ---------------------
+        // Iterators
+        // ---------------------
 
         template <bool IsConst>
         class iterator_impl {
