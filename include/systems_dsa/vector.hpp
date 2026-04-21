@@ -10,7 +10,6 @@
 #define VEC_ASSERT_VALID() (void(0))
 #endif
 
-// TODO: Use moveElements
 // TODO: Test move and copy semantics of the container
 
 namespace systems_dsa {
@@ -346,23 +345,6 @@ namespace systems_dsa {
             data = nullptr;
         }
 
-        void moveElements(vector& source, vector& destination) {
-            assert(source.capacity() <= destination.capacity());
-            void* rawMem = ::operator new(sizeof(T) * destination.capacity(), static_cast<std::align_val_t>(alignof(T)));
-            T* newData = static_cast<T*>(rawMem);
-            size_type i {};
-            try {
-                for (; i < source.size(); ++i) {
-                    newData + i  = std::move_if_noexcept(source.m_data + i);
-                }
-            } catch (...) {
-                destroyData(newData, i);
-                deallocate(newData);
-                return;
-            }
-
-            destination.m_data = newData;
-        }
         ///////////////
         // Iterators //
         ///////////////
