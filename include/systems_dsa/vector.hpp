@@ -151,7 +151,7 @@ namespace systems_dsa {
             } else {
                 // Increase size
                 size_type oldSize { m_size };
-                allocate(getExpandedCapacity(newSize)); // TODO: Confirm this is intended behavior. Maybe we want capacity to equal size?
+                allocate(getExpandedCapacity(newSize));
                 for (size_type i { oldSize }; i < newSize; ++i) {
                     new (m_data + i) T();
                 }
