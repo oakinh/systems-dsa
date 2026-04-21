@@ -14,6 +14,8 @@ public:
     inline static int copyAssignCount;
     inline static int moveAssignCount;
 
+    int id {};
+
     static void resetCounts() {
         liveCount = 0;
         ctorCount = 0;
@@ -30,16 +32,17 @@ public:
         m_alive = true;
     }
 
-    ~LifetimeTracker() {
-        assert(m_alive && "Destruction called on non-constructed object");
-        ++dtorCount;
-        --liveCount;
-        m_alive = false;
+    LifetimeTracker(int val) {
+        ++ctorCount;
+        ++liveCount;
+        m_alive = true;
+        id = val;
     }
 
     LifetimeTracker(const LifetimeTracker& other [[maybe_unused]]) {
         assert(other.m_alive && "Copied from class is not alive.");
         m_alive = true;
+        id = other.id;
         ++copyCtorCount;
         ++liveCount;
     }
@@ -47,6 +50,7 @@ public:
     LifetimeTracker(LifetimeTracker&& other [[maybe_unused]]) noexcept {
         assert(other.m_alive && "Moved from class was not alive.");
         m_alive = true;
+        id = other.id;
         ++moveCtorCount;
         ++liveCount;
     }
@@ -59,6 +63,7 @@ public:
         assert(other.m_alive && "Copy assigned from is not alive.");
         ++copyAssignCount;
         m_alive = other.m_alive;
+        id = other.id;
         return *this;
     }
 
@@ -70,18 +75,31 @@ public:
         assert(other.m_alive && "Move assigned from is not alive.");
         ++moveAssignCount;
         m_alive = other.m_alive;
+        id = other.id;
         return *this;
     }
 
+    ~LifetimeTracker() {
+        assert(m_alive && "Destruction called on non-constructed object");
+        ++dtorCount;
+        --liveCount;
+        m_alive = false;
+    }
+
+    bool isAlive() const {
+        return m_alive;
+    }
+
     friend std::ostream& operator<<(std::ostream& out, const LifetimeTracker& tracker) {
-        out << "tracker isAlive: " << tracker.m_alive << "\n";
-        out << "liveCount: " << tracker.liveCount << "\n";
-        out << "ctorCount: " << tracker.ctorCount << "\n";
-        out << "dtorCount: " << tracker.dtorCount << "\n";
-        out << "copyCtorCount: " << tracker.copyCtorCount << "\n";
-        out << "moveCtorCount: " << tracker.moveCtorCount << "\n";
-        out << "copyAssignCount: " << tracker.copyAssignCount << "\n";
-        out << "moveAssignCount: " << tracker.moveAssignCount << "\n";
+        out << "tracker id: " << tracker.id << '\n';
+        out << "tracker isAlive: " << tracker.m_alive << '\n';
+        out << "liveCount: " << tracker.liveCount << '\n';
+        out << "ctorCount: " << tracker.ctorCount << '\n';
+        out << "dtorCount: " << tracker.dtorCount << '\n';
+        out << "copyCtorCount: " << tracker.copyCtorCount << '\n';
+        out << "moveCtorCount: " << tracker.moveCtorCount << '\n';
+        out << "copyAssignCount: " << tracker.copyAssignCount << '\n';
+        out << "moveAssignCount: " << tracker.moveAssignCount << '\n';
         return out;
     }
 };

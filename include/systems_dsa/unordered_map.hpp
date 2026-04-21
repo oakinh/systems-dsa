@@ -71,7 +71,7 @@ class unordered_map {
         const value_type* ptr() const noexcept {
             return std::launder(reinterpret_cast<const value_type*>(storage));
         }
-        K& key() noexcept {
+        const K& key() noexcept {
             assert(state == State::FILLED);
             return ptr()->first;
         }
