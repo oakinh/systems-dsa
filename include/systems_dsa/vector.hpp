@@ -122,7 +122,6 @@ namespace systems_dsa {
     // Size & Capacity
     // ---------------------
         size_type size() const {
-
             return m_size;
         }
         size_type capacity() const {
