@@ -90,6 +90,14 @@ public:
         return m_alive;
     }
 
+    bool operator<(const LifetimeTracker& other) const {
+        return id < other.id;
+    }
+
+    bool operator>(const LifetimeTracker& other) const {
+        return id > other.id;
+    }
+
     friend std::ostream& operator<<(std::ostream& out, const LifetimeTracker& tracker) {
         out << "tracker id: " << tracker.id << '\n';
         out << "tracker isAlive: " << tracker.m_alive << '\n';

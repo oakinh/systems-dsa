@@ -56,10 +56,11 @@ namespace systems_dsa {
             try {
                 for (size_type i {}; i < other.size(); ++i) {
                     m_data[i] = other.m_data[i];
+                    ++m_size;
                 }
                 assert(m_size == other.size());
             } catch (...) {
-
+                throw;
             }
             VEC_ASSERT_VALID();
         }
@@ -76,9 +77,10 @@ namespace systems_dsa {
             assert(m_capacity == other.capacity());
             for (size_type i {}; i < other.size(); ++i) {
                 m_data[i] = other.m_data[i];
+                ++m_size;
             }
-            m_size = other.size();
-            // assert(m_size == other.size());
+            //m_size = other.size();
+            assert(m_size == other.size());
             VEC_ASSERT_VALID();
             return *this;
         }
