@@ -78,6 +78,17 @@ TEST(BinaryHeapTest, PushPreservesOrderProperty) {
     EXPECT_TRUE(IsValidPopOrder(heap));
 }
 
+TEST(BinaryHeapTest, EmptyReturnsExpectedBool) {
+    systems_dsa::binary_heap<int> heap {};
+    EXPECT_TRUE(heap.empty());
+    heap.push(0);
+    EXPECT_FALSE(heap.empty());
+}
+
+TEST_F(BinaryHeapTest_F, TopReturnsHighestPriorityElement) {
+    EXPECT_EQ(heap.top().id, 1000);
+}
+
 /////////////////////////
 // Adversarial testing //
 /////////////////////////
