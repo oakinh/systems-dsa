@@ -9,6 +9,7 @@ Ordering is done according to the Comparator template argument passed in.
 - parent: For a given node at index i, the parent is: (i - 1) / 2
 - left child: For a given node at index i, the left child is: 2 * i + 1
 - right child: For a given node at index i, the right child is: 2 * i + 2
+- Higher priority: the element that does NOT come before others according to Compare
 
 ## Memory layout
 
@@ -29,7 +30,8 @@ class binary_heap {
     - After any given operation, the container is ordered using the comparator according to the heap ordering property.
         - Ex: with std::less, index 0 will be the largest element. Each parent >= it's children.
         - Notably, only the parent vs child ordering is guaranteed, **not** global ordering.
-        - The root (index 0), must always hold the highest-priority element according to Compare.
+        - The root (index 0), must always hold the highest-priority element according to Compare
+          - This is the element that comes **last** in ordering according to Compare.
 - m_data.size() == the number of heap elements
 - top() is m_data[0] when non-empty
 

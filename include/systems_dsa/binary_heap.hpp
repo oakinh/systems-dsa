@@ -21,6 +21,7 @@ public:
     using reference = T&;
     using const_reference = const T&;
     using comparator_type = Compare;
+    // Higher priority: the element that does NOT come before others
 
     // =========================
     // Constructors / assignment
@@ -63,12 +64,41 @@ public:
 
         for (
             size_type parentIndex { getParentIndex(insertedIndex) };
-            m_comp(m_data[insertedIndex], m_data[parentIndex]);
+            m_comp(m_data[parentIndex], m_data[insertedIndex]);
             insertedIndex = parentIndex, parentIndex = getParentIndex(insertedIndex)
         ) {
             std::swap(m_data[insertedIndex], m_data[parentIndex]);
             if (parentIndex == 0) break;
         }
+        BHEAP_ASSERT_VALID();
+    }
+
+    void pop() {
+        assert(!empty());
+        std::swap(m_data[0], m_data[m_data.size() - 1]);
+        m_data.pop_back();
+
+        size_type parentIndex { 0 };
+
+        auto priorityChildOpt { findPriorityChildIndex(parentIndex) };
+        if (!priorityChildOpt.has_value()) {
+            BHEAP_ASSERT_VALID();
+            return;
+        }
+        size_type priorityChildIndex { priorityChildOpt.value() };
+
+        while (m_comp(m_data[parentIndex], m_data[priorityChildIndex])) {
+            std::swap(m_data[priorityChildIndex], m_data[parentIndex]);
+
+            // Update parent index
+            parentIndex = priorityChildIndex;
+
+            // Update child index
+            priorityChildOpt = findPriorityChildIndex(parentIndex);
+            if (!priorityChildOpt.has_value()) break;
+            priorityChildIndex = priorityChildOpt.value();
+        }
+
         BHEAP_ASSERT_VALID();
     }
 
@@ -85,21 +115,44 @@ private:
     }
 
     size_type getLeftChildIndex(size_type i) const {
-        assert(i > 0);
         return 2 * i + 1;
     }
 
     size_type getRightChildIndex(size_type i) const {
-        assert(i > 0);
         return 2 * i + 2;
+    }
+
+    std::optional<size_type> findPriorityChildIndex(size_type i) const {
+        size_type lChildIndex { getLeftChildIndex(i) };
+        size_type rChildIndex { getRightChildIndex(i) };
+        size_type gtPriorityChildIndex {};
+
+        // No need to check right child, if left is out of bounds, so is right child
+        if (lChildIndex >= m_data.size()) {
+            // No children
+            return std::nullopt;
+        }
+
+        if (rChildIndex >= m_data.size()) {
+            // Only has the left child (only having a right child violates the structure rule)
+            gtPriorityChildIndex = lChildIndex;
+        } else {
+            gtPriorityChildIndex = !m_comp(
+                m_data[lChildIndex], m_data[rChildIndex])
+                ? lChildIndex
+                : rChildIndex;
+        }
+
+        return gtPriorityChildIndex;
     }
 
     void assertValid() const {
         for (size_type i { 1 }; i < m_data.size(); ++i) {
             // Initialize to 1 to avoid dividing by zero in get...Index helpers
             size_type parentIndex { getParentIndex(i) };
-            assert(m_comp(m_data[parentIndex], m_data[i]) && "assertValid() detected an order rule violation");
-            assert(m_comp(top(), m_data[i]) && "top() providing m_data[0] was not the highest priority element");
+
+            assert(!m_comp(m_data[parentIndex], m_data[i]) && "assertValid() detected an order rule violation");
+            assert(!m_comp(top(), m_data[i]) && "top() providing m_data[0] was not the highest priority element");
         }
     }
 };
