@@ -64,6 +64,7 @@ public:
 
         for (
             size_type parentIndex { getParentIndex(insertedIndex) };
+            // Key Invariant: Parents must not compare as "before" in ordering
             m_comp(m_data[parentIndex], m_data[insertedIndex]);
             insertedIndex = parentIndex, parentIndex = getParentIndex(insertedIndex)
         ) {
@@ -87,6 +88,7 @@ public:
         }
         size_type priorityChildIndex { priorityChildOpt.value() };
 
+        // Key Invariant: Parents must not compare as "before" in ordering
         while (m_comp(m_data[parentIndex], m_data[priorityChildIndex])) {
             std::swap(m_data[priorityChildIndex], m_data[parentIndex]);
 
