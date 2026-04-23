@@ -32,7 +32,7 @@ public:
         m_alive = true;
     }
 
-    LifetimeTracker(int val) {
+    LifetimeTracker(int val)  {
         ++ctorCount;
         ++liveCount;
         m_alive = true;
@@ -96,6 +96,10 @@ public:
 
     bool operator>(const LifetimeTracker& other) const {
         return id > other.id;
+    }
+
+    bool operator==(const LifetimeTracker& other) const {
+        return id == other.id;
     }
 
     friend std::ostream& operator<<(std::ostream& out, const LifetimeTracker& tracker) {
