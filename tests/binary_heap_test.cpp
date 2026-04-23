@@ -95,6 +95,16 @@ TEST_F(BinaryHeapTest_F, TopReturnsHighestPriorityElement) {
     EXPECT_EQ(heap.top().id, 1000);
 }
 
+TEST(BinaryHeapTest, EmplaceConstructsInContainer) {
+    systems_dsa::binary_heap<LifetimeTracker> heap {};
+    LifetimeTracker::resetCounts();
+    heap.emplace(1);
+    EXPECT_EQ(LifetimeTracker::copyCtorCount, 0);
+    EXPECT_EQ(LifetimeTracker::moveCtorCount, 0);
+    EXPECT_EQ(heap.size(), 1);
+    LifetimeTracker::resetCounts();
+}
+
 /////////////////////////
 // Adversarial testing //
 /////////////////////////
