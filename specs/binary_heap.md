@@ -45,6 +45,11 @@ class binary_heap {
 - Returns a size_type of the number of elements held in the container
 - Complexity: O(1)
 - Exception safety: Non-throwing
+#### reserve
+- Returns void
+- Reallocates the underlying container such than `n` elements can be held without incurring a reallocation
+#### capacity
+- Returns the number of allocated slots in the underlying container
 ### Modifiers
 #### push
 - Returns void

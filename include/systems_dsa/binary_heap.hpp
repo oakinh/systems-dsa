@@ -18,7 +18,6 @@ public:
     // =========================
     using size_type = std::size_t;
     using value_type = T;
-    using reference = T&;
     using const_reference = const T&;
     using comparator_type = Compare;
     // Higher priority: the element that does NOT come before others
@@ -37,19 +36,27 @@ public:
     // =========================
     // Capacity (empty, size)
     // =========================
-    bool empty() noexcept {
+    bool empty() const noexcept {
         return m_data.size() == 0;
     }
 
-    size_type size() noexcept {
+    size_type size() const noexcept {
         return m_data.size();
+    }
+
+    size_type capacity() const noexcept {
+        return m_data.capacity();
+    }
+
+    void reserve(size_type n) {
+        m_data.reserve(n);
     }
 
     // =========================
     // Element access (top)
     // =========================
 
-    reference top() const {
+    const_reference top() const {
         return m_data[0];
     }
 
@@ -64,7 +71,7 @@ public:
 
         for (
             size_type parentIndex { getParentIndex(insertedIndex) };
-            // Key Invariant: Parents must not compare as "before" in ordering
+            // Key Invariant: Parents must not compare as "before" in ordering, otherwise we swap
             m_comp(m_data[parentIndex], m_data[insertedIndex]);
             insertedIndex = parentIndex, parentIndex = getParentIndex(insertedIndex)
         ) {
@@ -73,6 +80,8 @@ public:
         }
         BHEAP_ASSERT_VALID();
     }
+
+    // void emplace(); TODO: Write emplace
 
     void pop() {
         assert(!empty());

@@ -1,7 +1,10 @@
 #include "utils/lifetime_tracker.hpp"
+#include "utils/seed.hpp"
 
 #include <gtest/gtest.h>
 #include <systems_dsa/binary_heap.hpp>
+#include <queue>
+#include <functional>
 
 class BinaryHeapTest_F : public testing::Test {
 protected:
@@ -81,8 +84,11 @@ TEST(BinaryHeapTest, PushPreservesOrderProperty) {
 TEST(BinaryHeapTest, EmptyReturnsExpectedBool) {
     systems_dsa::binary_heap<int> heap {};
     EXPECT_TRUE(heap.empty());
+    EXPECT_EQ(heap.size(), 0);
+    EXPECT_GT(heap.capacity(), 0);
     heap.push(0);
     EXPECT_FALSE(heap.empty());
+    EXPECT_EQ(heap.size(), 1);
 }
 
 TEST_F(BinaryHeapTest_F, TopReturnsHighestPriorityElement) {
@@ -92,3 +98,53 @@ TEST_F(BinaryHeapTest_F, TopReturnsHighestPriorityElement) {
 /////////////////////////
 // Adversarial testing //
 /////////////////////////
+
+TEST(BinaryHeapTest, RandomSeqPushPop) {
+    std::uint64_t seed { getSeed("BHEAP_SEED") };
+    std::mt19937_64 rng(seed);
+    std::uniform_int_distribution<> valDist (1, 1000);
+
+    std::priority_queue<LifetimeTracker, std::vector<LifetimeTracker>, std::less<LifetimeTracker>> reference;
+    systems_dsa::binary_heap<LifetimeTracker, std::less<LifetimeTracker>> heap;
+
+    for (std::size_t i {}; i < 1000; ++i) {
+        int val { valDist(rng) };
+        heap.push({ val });
+        reference.push({ val });
+    }
+    EXPECT_TRUE(IsValidPopOrder(heap));
+    ASSERT_EQ(reference.size(), heap.size());
+    ASSERT_FALSE(reference.empty() && heap.empty());
+    ASSERT_EQ(reference.top(), heap.top());
+
+    enum class OP : uint8_t {
+        PUSH,
+        POP
+    };
+
+    std::uniform_int_distribution<> opDist(0, 1);
+
+    for (std::size_t i {}; i < 10'000; ++i) {
+        OP op { static_cast<OP>(opDist(rng)) };
+        if (heap.empty() && reference.empty()) op = OP::PUSH;
+        switch (op) {
+        case OP::PUSH: {
+            int val { valDist(rng) };
+            heap.push({ val });
+            reference.push({ val });
+            ASSERT_EQ(heap.size(), reference.size());
+            ASSERT_FALSE(heap.empty() && reference.empty());
+            ASSERT_EQ(heap.top(), reference.top());
+            break;
+        }
+        case OP::POP:
+            ASSERT_FALSE(heap.empty() && reference.empty());
+            ASSERT_EQ(heap.top(), reference.top());
+            heap.pop();
+            reference.pop();
+            ASSERT_EQ(heap.size(), reference.size());
+            break;
+        }
+    }
+    EXPECT_TRUE(IsValidPopOrder(heap));
+}
