@@ -105,6 +105,21 @@ TEST(BinaryHeapTest, EmplaceConstructsInContainer) {
     LifetimeTracker::resetCounts();
 }
 
+TEST(BinaryHeapTest, ReserveAllowsNElementsWithoutReallocation) {
+    systems_dsa::binary_heap<LifetimeTracker> heap {};
+    ASSERT_LT(heap.capacity(), 100);
+    heap.reserve(100);
+    std::size_t capacity { heap.capacity() };
+    for (std::size_t i {}; i < 100; ++i) {
+        heap.push({}); // Should not cause a reallocation
+    }
+    ASSERT_EQ(heap.capacity(), capacity);
+    LifetimeTracker::resetCounts();
+    heap.push({}); // Should cause a reallocation
+    ASSERT_GT(heap.capacity(), capacity);
+    ASSERT_GE(LifetimeTracker::moveCtorCount, 100);
+}
+
 /////////////////////////
 // Adversarial testing //
 /////////////////////////
