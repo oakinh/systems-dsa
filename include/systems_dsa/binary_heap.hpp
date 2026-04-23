@@ -63,25 +63,19 @@ public:
     // =========================
     // Modifiers (push, emplace, pop)
     // =========================
-    void push(value_type val) {
-        m_data.push_back(val);
-        size_type insertedIndex { m_data.size() - 1 };
-
-        if (insertedIndex == 0) return;
-
-        for (
-            size_type parentIndex { getParentIndex(insertedIndex) };
-            // Key Invariant: Parents must not compare as "before" in ordering, otherwise we swap
-            m_comp(m_data[parentIndex], m_data[insertedIndex]);
-            insertedIndex = parentIndex, parentIndex = getParentIndex(insertedIndex)
-        ) {
-            std::swap(m_data[insertedIndex], m_data[parentIndex]);
-            if (parentIndex == 0) break;
-        }
-        BHEAP_ASSERT_VALID();
+    void push(const value_type& val) {
+        emplace(val);
+    }
+    void push(value_type&& val) {
+        emplace(std::move(val));
     }
 
-    // void emplace(); TODO: Write emplace
+    template <typename... Args>
+    void emplace(Args&&... args) {
+        m_data.emplace_back(std::forward<Args>(args)...);
+        siftUp();
+        BHEAP_ASSERT_VALID();
+    }
 
     void pop() {
         assert(!empty());
@@ -155,6 +149,22 @@ private:
         }
 
         return gtPriorityChildIndex;
+    }
+
+    void siftUp() {
+        size_type insertedIndex { m_data.size() - 1 };
+
+        if (insertedIndex == 0) return;
+
+        for (
+            size_type parentIndex { getParentIndex(insertedIndex) };
+            // Key Invariant: Parents must not compare as "before" in ordering, otherwise we swap
+            m_comp(m_data[parentIndex], m_data[insertedIndex]);
+            insertedIndex = parentIndex, parentIndex = getParentIndex(insertedIndex)
+        ) {
+            std::swap(m_data[insertedIndex], m_data[parentIndex]);
+            if (parentIndex == 0) break;
+        }
     }
 
     void assertValid() const {
