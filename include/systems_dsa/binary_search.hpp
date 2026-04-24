@@ -3,24 +3,25 @@
 
 namespace systems_dsa {
 
+// Searches for the first element in the partitioned range which is **not** ordered before target
 template <typename T, typename Compare>
 std::size_t lower_bound(const T* data, std::size_t n, const T& target, Compare comp) {
+    if (n == 0) return 0;
+
     const T* low { data };
-    const T* high { data + n - 1 };
+    const T* high { data + n }; // One past end
 
-    if (!comp(*low, target)) return n; // No lower bound element present
+    while (comp(low, high)) {
+        const T* mid { low + (high - low) / 2 };
 
-    while (comp(*low, *high)) {
-        const T* mid { low + (high-low) / 2 };
-
-        if (!comp(target, *mid)) {
-            low = mid;
-        } else if (comp(target, *mid)) {
-            high = mid - 1;
+        if (comp(*mid, target)) {
+            low = mid + 1;
+        } else {
+            high = mid;
         }
     }
 
-    return static_cast<std::size_t>(high - data);
+    return static_cast<std::size_t>(low - data);
 }
 
 template <typename T, typename Compare>
