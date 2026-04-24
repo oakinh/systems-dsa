@@ -178,7 +178,6 @@ private:
     }
 #endif
 };
-
 }
 
 
