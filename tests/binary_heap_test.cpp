@@ -105,6 +105,27 @@ TEST(BinaryHeapTest, EmplaceConstructsInContainer) {
     LifetimeTracker::resetCounts();
 }
 
+TEST(BinaryHeapTest, PushedLValueCopyConstructsOnce) {
+    systems_dsa::binary_heap<LifetimeTracker> heap {};
+    LifetimeTracker myTracker { 15 };
+    LifetimeTracker::resetCounts();
+    heap.push(myTracker);
+    EXPECT_EQ(LifetimeTracker::copyCtorCount, 1);
+    EXPECT_EQ(LifetimeTracker::moveCtorCount, 0);
+    LifetimeTracker::resetCounts();
+}
+
+TEST(BinaryHeapTest, PushedRValueMoveConstructsOnce) {
+    systems_dsa::binary_heap<LifetimeTracker> heap {};
+    LifetimeTracker::resetCounts();
+    heap.push(LifetimeTracker{15});
+
+    EXPECT_EQ(LifetimeTracker::moveCtorCount, 1);
+    EXPECT_EQ(LifetimeTracker::copyCtorCount, 0);
+
+    LifetimeTracker::resetCounts();
+}
+
 TEST(BinaryHeapTest, ReserveAllowsNElementsWithoutReallocation) {
     systems_dsa::binary_heap<LifetimeTracker> heap {};
     ASSERT_LT(heap.capacity(), 100);
@@ -129,8 +150,8 @@ TEST(BinaryHeapTest, RandomSeqPushPop) {
     std::mt19937_64 rng(seed);
     std::uniform_int_distribution<> valDist (1, 1000);
 
-    std::priority_queue<LifetimeTracker, std::vector<LifetimeTracker>, std::less<LifetimeTracker>> reference;
-    systems_dsa::binary_heap<LifetimeTracker, std::less<LifetimeTracker>> heap;
+    std::priority_queue<LifetimeTracker, std::vector<LifetimeTracker>, std::less<>> reference;
+    systems_dsa::binary_heap<LifetimeTracker, std::less<>> heap;
 
     for (std::size_t i {}; i < 1000; ++i) {
         int val { valDist(rng) };

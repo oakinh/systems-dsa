@@ -166,7 +166,7 @@ private:
             if (parentIndex == 0) break;
         }
     }
-
+#ifndef NDEBUG
     void assertValid() const {
         for (size_type i { 1 }; i < m_data.size(); ++i) {
             // Initialize to 1 to avoid dividing by zero in get...Index helpers
@@ -176,6 +176,7 @@ private:
             assert(!m_comp(top(), m_data[i]) && "top() providing m_data[0] was not the highest priority element");
         }
     }
+#endif
 };
 
 }
