@@ -49,6 +49,7 @@ target_sources(systems_dsa INTERFACE
         include/systems_dsa/vector.hpp
         include/systems_dsa/unordered_map.hpp
         include/systems_dsa/binary_heap.hpp
+        include/systems_dsa/binary_search.hpp
 )
 
 # ------------------------------------------------------------------------------
@@ -107,6 +108,7 @@ if(SYSTEMS_DSA_BUILD_TESTS AND BUILD_TESTING)
             tests/vector_test.cpp
             tests/unordered_map_test.cpp
             tests/binary_heap_test.cpp
+            tests/binary_search_test.cpp
     )
 
     # Include test helper headers too (helps CLion index them as part of the target).
